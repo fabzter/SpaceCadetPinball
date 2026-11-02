@@ -51,10 +51,13 @@ cp -a Libs/SDL2.framework SpaceCadetPinball.app/Contents/Frameworks/
 cp -a Libs/SDL2_mixer.framework SpaceCadetPinball.app/Contents/Frameworks/
 cp -a bin/SpaceCadetPinball SpaceCadetPinball.app/Contents/MacOS/
 
-sed -i '' "s/CHANGEME_SW_VERSION/$sw_version/" SpaceCadetPinball.app/Contents/Info.plist
+# Stage a DMG root containing the .app plus a double-clickable
+# uninstaller that removes the app and its Application Support data.
+mkdir -p dmg_root
+mv SpaceCadetPinball.app dmg_root/
+cp -a Platform/macOS/uninstall.command dmg_root/
 
-echo -n "APPL????" > SpaceCadetPinball.app/Contents/PkgInfo
+hdiutil create -fs HFS+ -srcfolder dmg_root -volname "SpaceCadetPinball $sw_version" "SpaceCadetPinball-$sw_version-mac.dmg"
 
-hdiutil create -fs HFS+ -srcfolder SpaceCadetPinball.app -volname "SpaceCadetPinball $sw_version" "SpaceCadetPinball-$sw_version-mac.dmg"
+rm -r dmg_root
 
-rm -r SpaceCadetPinball.app
