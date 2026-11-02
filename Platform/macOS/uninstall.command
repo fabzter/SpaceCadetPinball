@@ -19,8 +19,10 @@ MODE="ask"
 echo "SpaceCadetPinball uninstaller"
 
 # Locate the app: same folder as this script, then usual install spots.
+# Never treat a mounted DMG (/Volumes) as the install — it's read-only.
 APP=""
 for dir in "$HERE" "$HOME/Applications" /Applications; do
+  case "$dir" in /Volumes/*) continue ;; esac
   if [ -d "$dir/$APP_NAME" ]; then APP="$dir/$APP_NAME"; break; fi
 done
 
