@@ -1,0 +1,238 @@
+#pragma once
+
+#include <string>
+#include <vector>
+
+struct TableView;
+
+// What Space Cadet 2026's screens ask the game to do. Presentation code can't reach the table or winmain, so winmain
+// fills this in with the same entry points the Classic menus use (pb and the options), and replays record them alike.
+struct DefinitiveHost
+{
+	struct Record
+	{
+		// The longest name the high score table keeps, in bytes of UTF-8
+		static constexpr size_t MaxNameBytes = 31;
+
+		std::string Name;
+		int Score;
+	};
+
+	// A new game with the number of players the options hold, as New Game starts it
+	void (*Play)();
+	// The table playing itself, behind the title
+	void (*StartDemo)();
+	// Null where the game can't end itself, as in a browser tab
+	void (*Quit)();
+	std::vector<Record> (*Records)();
+	void (*ClearRecords)();
+	// The tables whose data was found, Space Cadet first; the title lists them when there is more than one
+	struct TableChoice
+	{
+		std::string Name;
+		// The game its data comes from, such as Full Tilt! Pinball
+		std::string Source;
+		// Its best high score, or a negative number for none
+		int BestScore;
+		bool Loaded;
+		// Its picture from the game data, or null
+		SDL_Texture* Picture;
+	};
+	std::vector<TableChoice> (*TableList)();
+	// The art at the top of the loaded table's score panel, cut from its DAT file, for the HUD's header; enlarged with
+	// the upscaler while Upscaled Art is on. Null for a table without known art.
+	SDL_Texture* (*PanelArt)();
+	// Saves the choice and restarts the game with that table, as Classic's Select Table does
+	void (*SelectTable)(size_t index);
+	// The next new high score that needs a name, with its default name, which is its player's, and its place from 0;
+	// false when none is left
+	bool (*NextRecord)(Record& record, int& place);
+	void (*SaveRecord)(const Record& record, int place);
+	// Pausing and resuming the game in play, as the pause key does
+	void (*Pause)();
+	void (*Resume)();
+	bool (*Paused)();
+	// Whether the screens should wait: while the table is still ending a game, which is when it checks the high
+	// scores, and while a dialog such as the high score name entry is open
+	bool (*Busy)();
+	const char* Version;
+
+	// Settings that need more than an option set, as the Classic menus do after changing them
+	void (*SetPostProcessing)(int effect);
+	// Why post-processing can't show here, or null
+	const char* (*PostProcessingUnavailable)();
+	// Why the lighting, glow and shaded ball can't show here, or null
+	const char* (*EffectsUnavailable)();
+	void (*SetUpscaleFactor)(int factor);
+	void (*SetSoundVolume)(int volume);
+	void (*SetSoundChannels)(int channels);
+	void (*SetMusicVolume)(int volume);
+	// The sound packs found, by name, and the one to use, empty for none; null where there are none to find, as in a
+	// browser
+	std::vector<std::string> (*SoundPacks)();
+	void (*SetSoundPack)(const std::string& name);
+	void (*FrameRateChanged)();
+	void (*PreciseSleepChanged)();
+	// Restarts the game in another language, as the Classic menu does
+	void (*SetLanguage)(const char* shortName);
+	// The largest table resolution the data has, 0 for 640 by 480 only
+	int (*MaxResolution)();
+	// Opens the dialog that asks for a font file, as the Classic menu's Change Font does
+	void (*ChangeFont)();
+	// The key or button that switches editions, empty when none is bound
+	std::string (*EditionKey)();
+	// Opens the system's folder dialog for the game data; once one is chosen, the game restarts and loads from it.
+	// Null where there is no such dialog, as in a browser.
+	void (*ChooseDataFolder)();
+	// Why the folder dialog couldn't open, or an empty string
+	std::string (*FolderDialogError)();
+	// Whether the folder chosen last had no game data, so the one in use stays
+	bool (*ChosenFolderEmpty)();
+	// The folder the game data was loaded from
+	std::string (*DataFolder)();
+	// Turns the picture by quarter turns clockwise, for a monitor on its side, and lays the table out for it
+	void (*SetRotation)(int quarterTurns);
+	// Recordings, from the recordings folder; null where there is none, as in a browser
+	struct Recording
+	{
+		std::string Name;
+		std::string Path;
+		// Milliseconds of play, and the games started in it
+		float Length;
+		int Games;
+		// Recorded with the game data loaded now
+		bool Playable;
+	};
+	std::vector<Recording> (*Recordings)();
+	void (*DeleteRecording)(const std::string& path);
+	// Restarts the game into a recording, which plays in the window
+	void (*ViewRecording)(const std::string& path);
+
+	// The recording that plays: whether one does, and where it is
+	struct Viewer
+	{
+		unsigned Frame;
+		unsigned Frames;
+		// Milliseconds of the recording, played and in all
+		float Time;
+		float Length;
+		// When games start, in milliseconds of the recording, for marks on the timeline
+		std::vector<float> Games;
+		bool Paused;
+		bool Ended;
+		// It played differently from how it was recorded, and stopped there
+		bool Failed;
+		float Speed;
+	};
+	bool (*Viewing)();
+	Viewer (*ViewerState)();
+	// Seeking back starts the recording again and runs it to the frame, which takes a moment
+	void (*ViewerSeek)(unsigned frame);
+	// The frame that plays at a time of the recording, in milliseconds
+	unsigned (*ViewerFrameAt)(float time);
+	void (*ViewerPause)(bool paused);
+	void (*ViewerSpeed)(float speed);
+	// Back to the title, which restarts the game
+	void (*StopViewing)();
+
+	// Where the table and its score panel are drawn, in window coordinates; the panel is empty when the table has none.
+	// band is set in a window taller than wide, where the panel is the band under the table, as wide as the window.
+	void (*Layout)(SDL_FRect& board, SDL_FRect& panel, bool& band);
+};
+
+// Space Cadet 2026's front end: the title with the main menu and the screens it leads to. It takes the place of
+// Classic's menu bar while Space Cadet 2026 is on.
+class DefinitiveFrontEnd
+{
+public:
+	static void SetHost(const DefinitiveHost& host);
+	// Each frame while Space Cadet 2026 is on
+	static void Render(const TableView& view);
+	// The title, over the table's demo
+	static void ShowTitle();
+	// Settings, opened on the controls when controls is true; back returns to the screen before
+	static void ShowSettings(bool controls = false);
+	// The pause screen, which pauses the game in play; it comes back on its own while the game is paused
+	static void ShowPause();
+	// The list of tables, as Ctrl+T opens it: from a game in play, which it pauses first, Back returns to the pause
+	// screen; from the title and the screens it leads to, to the title. Only with more than one table, and not from a
+	// game that is ending or its summary.
+	static void ShowTables();
+	// The bar of a recording that plays, which stays until the player goes back to the title
+	static void ShowViewer();
+	// The first-run screen when no game data was found: where it looked and a way to choose the folder; the game
+	// runs it in place of the table until a folder is chosen or the player quits
+	static void RenderMissingData(const std::vector<std::string>& looked, bool chosenFolderFailed);
+	// The pause key: the pause screen, or back to the game from it and from Settings opened there
+	static void TogglePause();
+	// Whether a screen is open, rather than the game in play
+	static bool ScreenOpen();
+	// Whether a key the game binds to a shortcut should still reach the game although a screen has the keyboard: while
+	// a screen had the focus in the last frame, and for Escape only on the title, the one screen it doesn't take back.
+	// The name entry types every key and the summary keeps them, so neither passes any.
+	static bool PassesShortcut(bool escape);
+	// Whether Settings waits for a key or button to bind to a control, which Escape and a tap cancel instead
+	static bool WaitsForBinding();
+
+private:
+	enum class Screen
+	{
+		None,
+		Title,
+		Records,
+		Credits,
+		Settings,
+		Pause,
+		GameOver,
+		NameEntry,
+		Guide,
+		Stats,
+		Recordings,
+		Viewer,
+		Tables,
+	};
+
+	static DefinitiveHost Host;
+	static Screen Current, SettingsFrom;
+	// Where Back leads from the list of tables: the pause screen or the title
+	static Screen TablesFrom;
+	static bool Opened, ConfirmClear, SummaryShown, Focused;
+	static float CreditsScroll;
+	// The table chosen from a game in play, which asks before ending it; SIZE_MAX while not asking
+	static size_t ConfirmTable;
+	// The rows below the table chosen took the focus request in that frame; the question asks again
+	static bool FocusConfirmTable;
+	// The high score whose name is being entered, its place, the name so far, and the default names, one per player, of
+	// the scores that made the table
+	static DefinitiveHost::Record Entry;
+	static int EntryPlace;
+	static std::string EntryName;
+	static std::vector<std::string> NewRecords;
+
+	static void Open(Screen screen);
+	// Whether the screen showing belongs to a game in play, which is paused under it
+	static bool FromPause();
+	// Whether the screen showing is the title or one it leads to, with the demo behind it
+	static bool UnderTitle();
+	static void FollowGame(const TableView& view, bool playing);
+	static void RenderTitle(const TableView& view);
+	static void RenderRecords();
+	static void RenderTables();
+	// The question before a game in play ends for another table, and the picture of that table
+	static SDL_Texture* RenderConfirmTable(const std::vector<DefinitiveHost::TableChoice>& tables);
+	// A row for each table and one to go back, and the picture of the table focused
+	static SDL_Texture* RenderTableRows(const std::vector<DefinitiveHost::TableChoice>& tables);
+	static void RenderCredits();
+	// In DefinitiveInGame.cpp
+	static void RenderPause(const TableView& view);
+	static void RenderGameOver(const TableView& view);
+	static void RenderNameEntry();
+	// Asks for the name of the next new high score; false when there is none
+	static bool NextName();
+	// A panel in the middle of the window over a veil that dims the game; its width and height at scale 1
+	static ImVec2 BeginCentred(const char* name, ImVec2 size);
+	// A window filling the column on the left, over a fade that keeps the table in view; returns its width
+	static float BeginColumn(const char* name, float width);
+	static void EndColumn();
+	static bool BackPressed();
+};

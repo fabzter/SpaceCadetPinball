@@ -4,6 +4,7 @@
 
 #include "control.h"
 #include "loader.h"
+#include "pb.h"
 #include "TBall.h"
 #include "timer.h"
 #include "TPinballTable.h"
@@ -11,11 +12,13 @@
 TDrain::TDrain(TPinballTable* table, int groupIndex) : TCollisionComponent(table, groupIndex, true)
 {
 	Timer = 0;
-	TimerTime = *loader::query_float_attribute(groupIndex, 0, 407);
+	TimerTime = *loader::required_float_attribute(groupIndex, 0, 407);
 }
 
 int TDrain::Message(MessageCode code, float value)
 {
+	if (pb::BonusTable())
+		KeepMessageFieldPerPlayer(code, value);
 	if (code == MessageCode::Reset)
 	{
 		if (Timer)
@@ -24,6 +27,13 @@ int TDrain::Message(MessageCode code, float value)
 			Timer = 0;
 		}
 		PinballTable->BallInDrainFlag = 0;
+	}
+	else if (code == MessageCode::SetTiltLock && pb::BonusTable() && Timer)
+	{
+		// Full Tilt's TDrain (CADET.EXE) also stops its timer here, which the bonus tables' rules use to serve a
+		// saved ball themselves; Space Cadet keeps Pinball.exe's
+		timer::kill(Timer);
+		Timer = 0;
 	}
 	return 0;
 }

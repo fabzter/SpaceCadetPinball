@@ -279,10 +279,6 @@ __pycache__/
 out/
 /cmake-build-debug
 
-# Windows XP stuff
-DebugWinXp/
-ReleaseWinXp/
-
 ### CMake ###
 CMakeLists.txt.user
 CMakeCache.txt
@@ -306,3 +302,21 @@ _deps
 build.ninja
 # Build directory
 /build
+
+### Original game data ###
+# Microsoft's files from 3D Pinball / Full Tilt! Pinball; never commit them.
+*.[Dd][Aa][Tt]
+*.[Ww][Aa][Vv]
+*.[Mm][Ii][Dd]
+*.[Mm][Dd][Ss]
+*.[Ee][Xx][Ee]
+*.7[Zz]
+[Tt][Aa][Bb][Ll][Ee].[Bb][Mm][Pp]
+[Cc][Aa][Dd][Ee][Tt].[Bb][Mm][Pp]
+[Dd][Rr][Aa][Gg][Oo][Nn].[Bb][Mm][Pp]
+[Pp][Ii][Rr][Aa][Tt][Ee][Ss].[Bb][Mm][Pp]
+[Ww][Aa][Vv][Ee][Mm][Ii][Xx].[Ii][Nn][Ff]
+
+### lefthook ###
+# Personal overrides of lefthook.yml
+lefthook-local.yml

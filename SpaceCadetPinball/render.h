@@ -25,6 +25,17 @@ struct render_sprite
 	std::vector<render_sprite*>* OccludedSprites;
 	rectangle_type BoundingRect{};
 	bool DirtyFlag{};
+	// Balls only: where the last two updates painted the ball, for drawing frames in between
+	struct
+	{
+		rectangle_type PaintedRect{}, PrevPaintedRect{}, SavedBmpRect{};
+		bool Painted{}, PrevPainted{};
+	} Interp{};
+	// Balls only: the part of the upscaled frame the ball covers
+	rectangle_type DirtyRectHi{};
+	// Balls only: the ball took its frames' second bitmaps (Dragon's Keep's PB cheat), a smiley Space Cadet 2026
+	// shows as it is instead of shading it
+	bool AltBall{};
 
 	render_sprite(VisualTypes visualType, gdrv_bitmap8* bmp, zmap_header_type* zMap,
 	              int xPosition, int yPosition, rectangle_type* boundingRect);
@@ -40,7 +51,8 @@ public:
 	static gdrv_bitmap8 *vscreen, *background_bitmap;
 	static zmap_header_type* background_zmap;
 	static int zmap_offsetX, zmap_offsetY;
-	static SDL_Rect DestinationRect;
+	// Where the table and its score panel are drawn, in pixels
+	static SDL_Rect BoardRect, SidebarRect;
 
 	static void init(gdrv_bitmap8* bmp, int width, int height);
 	static void uninit();
@@ -52,15 +64,51 @@ public:
 	static void shift(int offsetX, int offsetY);
 	static void build_occlude_list();
 	static void SpriteViewer(bool* show);
-	static void PresentVScreen();
+	// ballAlpha is how far the frame is from the update before the last to the last, for Space Cadet 2026's balls
+	static void PresentVScreen(float ballAlpha = 1.0f);
+	static int BoardWidth();
+	static void InterpolateBalls(float alpha);
+	static void RestoreBalls();
+	// The texture is the frame at textureScale times its size
+	static void DrawSplit(SDL_Texture* texture, float offsetX, float offsetY, int textureScale = 1);
+	// Upscaled art: 0 for the original sprites, or 2 or 4 to draw an upscaled copy of the frame
+	static void SetUpscale(int factor);
+	static int GetUpscale()
+	{
+		return HiScale;
+	}
+	// The table's background as pb::init first copied it into the frame
+	static gdrv_bitmap8* InitialBackground;
+
 private:
 	static std::vector<render_sprite*> sprite_list, ball_list;
 	static int offset_x, offset_y;
 	static rectangle_type vscreen_rect;
 	static gdrv_bitmap8* ball_bitmap[20];
 	static zmap_header_type* zscreen;
+	static SDL_Texture* BackdropTexture;
+	static bool BallsInterpolated;
+	static gdrv_bitmap8 *vscreenHi, *ball_bitmap_hi[20];
+	static zmap_header_type* zscreenHi;
+	static int HiScale;
+	static std::vector<ColorRgba> SidebarCopy;
+	// The depth map as a texture for Space Cadet 2026's compositor, and the part of the frame whose depth changed
+	// since it was last updated, at 1x; DepthChangedAll when all of it did
+	static SDL_Texture* DepthTexture;
+	static rectangle_type DepthChanged;
+	static bool DepthChangedAll;
+	static std::vector<ColorRgba> DepthRows;
 
 	static void repaint(const render_sprite& sprite);
-	static void paint_balls();
+	// altOnly paints only the balls with AltBall set, which Space Cadet 2026's compositor leaves in the frame
+	static void paint_balls(bool altOnly = false);
 	static void unpaint_balls();
+	static void paint_balls_hi();
+	static void PaintHi(const render_sprite& sprite, const rectangle_type& clipRect);
+	static void RefreshSidebarHi();
+	static void DrawBackdrop();
+	static void CreateBackdrop();
+	static void DepthChange(const rectangle_type& rect);
+	// Brings the depth texture up to date with the depth map that goes with the frame on show, or null if it can't
+	static SDL_Texture* UpdateDepthTexture();
 };

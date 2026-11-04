@@ -27,10 +27,14 @@ TTextBox::TTextBox(TPinballTable* table, int groupIndex) : TPinballComponent(tab
 		/*Full tilt: text box dimensions index is offset by resolution*/
 		int arrLength;
 		auto dimensions = loader::query_iattribute(groupIndex + fullscrn::GetResolution(), 1500, &arrLength);
-		OffsetX = dimensions[0];
-		OffsetY = dimensions[1];
-		Width = dimensions[2];
-		Height = dimensions[3];
+		// A damaged table may lack them; the box then stays empty
+		if (dimensions && arrLength >= 4)
+		{
+			OffsetX = dimensions[0];
+			OffsetY = dimensions[1];
+			Width = dimensions[2];
+			Height = dimensions[3];
+		}
 	}
 }
 
@@ -53,6 +57,8 @@ TTextBox::~TTextBox()
 
 int TTextBox::Message(MessageCode code, float value)
 {
+	if (pb::BonusTable())
+		KeepMessageFieldPerPlayer(code, value);
 	return 0;
 }
 
@@ -98,34 +104,50 @@ void TTextBox::Clear(bool lowPriorityOnly)
 		CurrentMessage = message->NextMessage;
 		delete message;
 	}
-	if (CurrentMessage)
+	if (CurrentMessage || Overlay)
 		Draw();
 }
 
-void TTextBox::Display(const char* text, float time, bool lowPriority)
+void TTextBox::DisplayOverlay(const char* text)
+{
+	Overlay = text;
+	Repaint();
+}
+
+void TTextBox::EndOverlay()
+{
+	Overlay.reset();
+	Repaint();
+}
+
+void TTextBox::Repaint()
+{
+	// A running timer means the current message shows; drawing it again would set a second one
+	if (Timer)
+		Paint(true);
+	else
+		Draw();
+}
+
+void TTextBox::Display(const char* text, float time, bool lowPriority, int fontIndex, const char* words)
 {
 	if (!text)
 		return;
 
-	if (CurrentMessage && !strcmp(text, PreviousMessage->Text))
+	// PIRATES.EXE's text box (0x41de40, the same in CADET.EXE and DRAGON.EXE) also clears its queue for a message
+	// without a time, so a mode's help text replaces the picture shown before it; Pinball.exe's waits for it.
+	// Skulduggery only: on Dragon's Keep the change could reach play, through the rules' state texts
+	auto clearsQueue = pb::Table == Tables::Skulduggery && time == -1.0f;
+	if (IsRepeat(text, fontIndex) && !(clearsQueue && PreviousMessage->Time != -1.0f))
 	{
-		PreviousMessage->Refresh(time);
-		if (PreviousMessage == CurrentMessage)
-		{
-			if (Timer && Timer != -1)
-				timer::kill(Timer);
-			if (time == -1.0f)
-				Timer = -1;
-			else
-				Timer = timer::set(time, this, TimerExpired);
-		}
+		RefreshRepeat(time);
 	}
 	else
 	{
-		if (Timer == -1)
+		if (Timer == -1 || clearsQueue)
 			Clear();
 
-		auto message = new TTextBoxMessage(text, time, lowPriority);
+		auto message = new TTextBoxMessage(text, time, lowPriority, fontIndex, words);
 		if (message->Text)
 		{
 			if (CurrentMessage)
@@ -143,11 +165,35 @@ void TTextBox::Display(const char* text, float time, bool lowPriority)
 	}
 }
 
+void TTextBox::RefreshRepeat(float time)
+{
+	PreviousMessage->Refresh(time);
+	if (PreviousMessage != CurrentMessage)
+		return;
+	if (Timer && Timer != -1)
+		timer::kill(Timer);
+	if (time == -1.0f)
+		Timer = -1;
+	else
+		Timer = timer::set(time, this, TimerExpired);
+}
+
 void TTextBox::DrawImGui()
 {
 	// Do nothing when using a font (the text will be rendered to VScreen in TTextBox::Draw)
-	if (Font || !CurrentMessage)
-		return;
+	const char* text;
+	if (Overlay)
+	{
+		if (Font)
+			return;
+		text = Overlay->c_str();
+	}
+	else
+	{
+		if (!CurrentMessage || CurrentMessage->FontIndex == 1 || MessageFont(CurrentMessage))
+			return;
+		text = CurrentMessage->Text;
+	}
 
 	char windowName[64];
 	SDL_Rect rect;
@@ -172,32 +218,21 @@ void TTextBox::DrawImGui()
 	snprintf(windowName, sizeof(windowName), "TTextBox_%p", static_cast<void*>(this));
 	if (ImGui::Begin(windowName, nullptr, window_flags))
 	{
-		ImGui::SetWindowFontScale(fullscrn::GetScreenToPinballRatio());
+		// Sized with the table; FontScaleDpi would scale it a second time
+		auto& style = ImGui::GetStyle();
+		ImGui::PushFont(nullptr, style.FontSizeBase * fullscrn::GetScreenToPinballRatio() / style.FontScaleDpi);
 
 		// ToDo: centered text in FT
 		ImGui::PushStyleColor(ImGuiCol_Text, pb::TextBoxColor);
-		ImGui::TextWrapped("%s", CurrentMessage->Text);
+		ImGui::TextWrapped("%s", text);
 		ImGui::PopStyleColor();
+		ImGui::PopFont();
 	}
 	ImGui::End();
 }
 
 void TTextBox::Draw()
 {
-	auto bmp = BgBmp;
-	if (bmp)
-		gdrv::copy_bitmap(
-			render::vscreen,
-			Width,
-			Height,
-			OffsetX,
-			OffsetY,
-			bmp,
-			OffsetX,
-			OffsetY);
-	else
-		gdrv::fill_bitmap(render::vscreen, Width, Height, OffsetX, OffsetY, 0);
-
 	bool display = false;
 	while (CurrentMessage)
 	{
@@ -222,9 +257,21 @@ void TTextBox::Draw()
 		delete tmp;
 	}
 
-	if (display)
+	Paint(display);
+}
+
+void TTextBox::Paint(bool display)
+{
+	auto bmp = BgBmp;
+	if (bmp)
+		gdrv::copy_bitmap(render::vscreen, Width, Height, OffsetX, OffsetY, bmp, OffsetX, OffsetY);
+	else
+		gdrv::fill_bitmap(render::vscreen, Width, Height, OffsetX, OffsetY, 0);
+
+	if (display || Overlay)
 	{
-		if (!Font)
+		auto font = Overlay ? Font : MessageFont(CurrentMessage);
+		if (!font)
 		{
 			// Immediate mode drawing using system font is handled by TTextBox::DrawImGui
 			return;
@@ -232,12 +279,10 @@ void TTextBox::Draw()
 
 		std::vector<LayoutResult> lines{};
 		auto textHeight = 0;
-		for (auto text = CurrentMessage->Text; ; textHeight += Font->Height)
+		for (auto text = Overlay ? Overlay->data() : CurrentMessage->Text;
+			 text[0] && textHeight + font->Height <= Height; textHeight += font->Height)
 		{
-			if (!text[0] || textHeight + Font->Height > Height)
-				break;
-
-			auto line = LayoutTextLine(text);
+			auto line = LayoutTextLine(text, font);
 			if (line.Start == line.End)
 				break;
 			lines.push_back(line);
@@ -255,7 +300,7 @@ void TTextBox::Draw()
 				offX += (Width - line.Width) / 2;
 			for (auto text = line.Start; text < line.End; text++)
 			{
-				auto charBmp = Font->Chars[*text & 0x7F];
+				auto charBmp = font->Chars[static_cast<unsigned char>(*text) % 128];
 				if (charBmp)
 				{
 					auto height = charBmp->Height;
@@ -265,15 +310,28 @@ void TTextBox::Draw()
 						                                 0);
 					else
 						gdrv::copy_bitmap(render::vscreen, width, height, offX, offY, charBmp, 0, 0);
-					offX += charBmp->Width + Font->GapWidth;
+					offX += charBmp->Width + font->GapWidth;
 				}
 			}
-			offY += Font->Height;
+			offY += font->Height;
 		}
 	}
 }
 
-TTextBox::LayoutResult TTextBox::LayoutTextLine(char* textStart) const
+bool TTextBox::IsRepeat(const char* text, int fontIndex) const
+{
+	return CurrentMessage && !strcmp(text, PreviousMessage->Text) && PreviousMessage->FontIndex == fontIndex;
+}
+
+const score_msg_font_type* TTextBox::MessageFont(const TTextBoxMessage* message) const
+{
+	// A picture message without the second font shows nothing rather than its glyphs as text
+	if (message->FontIndex == 1)
+		return score::msg_font2p;
+	return Font;
+}
+
+TTextBox::LayoutResult TTextBox::LayoutTextLine(char* textStart, const score_msg_font_type* font) const
 {
 	auto lineWidth = 0, wordWidth = 0;
 	char *wordBoundary = nullptr, *textEnd;
@@ -283,11 +341,11 @@ TTextBox::LayoutResult TTextBox::LayoutTextLine(char* textStart) const
 		if (!maskedChar || maskedChar == '\n')
 			break;
 
-		auto charBmp = Font->Chars[maskedChar];
+		auto charBmp = font->Chars[maskedChar];
 		if (!charBmp)
 			continue;
 
-		auto width = lineWidth + charBmp->Width + Font->GapWidth;
+		auto width = lineWidth + charBmp->Width + font->GapWidth;
 		if (width > Width)
 		{
 			if (wordBoundary)

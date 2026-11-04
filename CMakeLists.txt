@@ -1,55 +1,113 @@
-cmake_minimum_required(VERSION 3.0...3.5)
+cmake_minimum_required(VERSION 3.24)
 project(SpaceCadetPinball)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+# CMake gives MSVC /std:c++latest for C++23, which since Visual Studio 2022 17.13 (MSVC 19.43) is C++26 in progress.
+# /std:c++23preview keeps it at C++23; switch to /std:c++23 once MSVC Build Tools 14.52 is stable on the CI runners.
+if(MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.43)
+    set(CMAKE_CXX23_STANDARD_COMPILE_OPTION "-std:c++23preview")
+    set(CMAKE_CXX23_EXTENSION_COMPILE_OPTION "-std:c++23preview")
+endif()
 
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/bin)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeModules")
-
-# On Windows, set paths to SDL-devel packages here
-if(WIN32)
-   list(APPEND SDL2_PATH "${CMAKE_CURRENT_LIST_DIR}/Libs/SDL2")
-   list(APPEND SDL2_MIXER_PATH "${CMAKE_CURRENT_LIST_DIR}/Libs/SDL2_mixer")
+# Windows, macOS and the web have no standard SDL packages, so build SDL from source there by default
+if(WIN32 OR APPLE OR EMSCRIPTEN)
+    set(SCP_VENDORED_SDL_DEFAULT ON)
+else()
+    set(SCP_VENDORED_SDL_DEFAULT OFF)
 endif()
+option(SCP_VENDORED_SDL "Build SDL3 and SDL3_mixer from pinned sources instead of using installed packages" ${SCP_VENDORED_SDL_DEFAULT})
+option(SCP_WARNINGS "Compile the game with extra warnings (-Wall -Wextra, or /W4 with MSVC) and treat them as errors" OFF)
+option(SCP_SANITIZERS "Build the game with AddressSanitizer and UndefinedBehaviorSanitizer (GCC and Clang)" OFF)
+# Set only by tools/make-test-build.sh, for test builds that are never published (docs/deployment.md)
+set(SCP_BUNDLED_DATA "" CACHE PATH "A folder of game data, in the layout the game searches, to build into a Windows or web test build")
+set(SCP_BUILD_COMMIT "" CACHE STRING "The commit a test build was made from, shown with the version")
 
 # Link mingw libs static
 if(MINGW)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")
 endif()
 
+# std::format and std::print need the floating-point std::to_chars, which Apple's libc++ has from macOS 13.3 on
 if(APPLE)
-    set(MACOSX_RPATH)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH true)
-    set(CMAKE_INSTALL_RPATH "@executable_path/../Frameworks")
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11")
-    if(NOT CMAKE_OSX_ARCHITECTURES)
-        set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
-    endif()
-    list(APPEND SDL2_PATH "${CMAKE_CURRENT_LIST_DIR}/Libs")
-    list(APPEND SDL2_MIXER_PATH "${CMAKE_CURRENT_LIST_DIR}/Libs")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "13.3")
 endif()
 
-# SDL2main is not needed
-set(SDL2_BUILDING_LIBRARY ON)
+if(SCP_VENDORED_SDL)
+    include(FetchContent)
 
-find_package(SDL2 REQUIRED)
-FIND_PACKAGE(SDL2_mixer REQUIRED)
+    # Static libraries, nothing installed, no tests or examples
+    set(BUILD_SHARED_LIBS OFF)
+    set(SDL_SHARED OFF)
+    set(SDL_STATIC ON)
+    set(SDL_TEST_LIBRARY OFF)
+    set(SDL_TESTS OFF)
+    set(SDL_EXAMPLES OFF)
+    set(SDL_INSTALL OFF)
+    set(SDL_UNINSTALL OFF)
 
-include_directories(${SDL2_INCLUDE_DIR} ${SDL2_MIXER_INCLUDE_DIR})
-get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-foreach(dir ${dirs})
-  message(STATUS "Include dir='${dir}'")
-endforeach()
+    # The game only plays WAV sounds and MIDI music. Timidity is SDL_mixer's only MIDI decoder
+    # that doesn't need a system library.
+    set(SDLMIXER_INSTALL OFF)
+    set(SDLMIXER_TESTS OFF)
+    set(SDLMIXER_EXAMPLES OFF)
+    set(SDLMIXER_VENDORED OFF)
+    set(SDLMIXER_DEPS_SHARED OFF)
+    set(SDLMIXER_AIFF OFF)
+    set(SDLMIXER_VOC OFF)
+    set(SDLMIXER_AU OFF)
+    set(SDLMIXER_FLAC OFF)
+    set(SDLMIXER_GME OFF)
+    set(SDLMIXER_MOD OFF)
+    set(SDLMIXER_MP3 OFF)
+    set(SDLMIXER_OPUS OFF)
+    set(SDLMIXER_VORBIS_STB OFF)
+    set(SDLMIXER_VORBIS_VORBISFILE OFF)
+    set(SDLMIXER_VORBIS_TREMOR OFF)
+    set(SDLMIXER_WAVPACK OFF)
+    set(SDLMIXER_WAVE ON)
+    set(SDLMIXER_MIDI ON)
+    set(SDLMIXER_MIDI_FLUIDSYNTH OFF)
+    set(SDLMIXER_MIDI_TIMIDITY ON)
+
+    FetchContent_Declare(SDL3
+            URL https://github.com/libsdl-org/SDL/releases/download/release-3.4.18/SDL3-3.4.18.tar.gz
+            URL_HASH SHA256=9c75cf16330322c217dedd2e0609f1124f1b54b8633e763467b4684d0f4334a3
+            )
+    FetchContent_Declare(SDL3_mixer
+            URL https://github.com/libsdl-org/SDL_mixer/releases/download/release-3.2.4/SDL3_mixer-3.2.4.tar.gz
+            URL_HASH SHA256=182a07c745375e113dc740d43964ff21b0be29f29f59876c4dbc4db3d32f6901
+            )
+    FetchContent_MakeAvailable(SDL3 SDL3_mixer)
+
+    set(SDL_LIBRARIES SDL3_mixer::SDL3_mixer-static SDL3::SDL3-static)
+else()
+    find_package(SDL3 3.2 REQUIRED CONFIG COMPONENTS SDL3)
+    find_package(SDL3_mixer 3.2 REQUIRED CONFIG)
+
+    set(SDL_LIBRARIES SDL3_mixer::SDL3_mixer SDL3::SDL3)
+endif()
 
 
 
 set(SOURCE_FILES
+        SpaceCadetPinball/BonusTableCheats.cpp
+        SpaceCadetPinball/BonusTableCheats.h
+        SpaceCadetPinball/BundledData.cpp
+        SpaceCadetPinball/BundledData.h
         SpaceCadetPinball/control.cpp
         SpaceCadetPinball/control.h
+        SpaceCadetPinball/control_dragon.cpp
+        SpaceCadetPinball/control_dragon.h
+        SpaceCadetPinball/control_skulduggery.cpp
+        SpaceCadetPinball/control_skulduggery.h
         SpaceCadetPinball/EmbeddedData.cpp
         SpaceCadetPinball/EmbeddedData.h
+        SpaceCadetPinball/EmbeddedDataDecompress.cpp
         SpaceCadetPinball/font_selection.cpp
         SpaceCadetPinball/font_selection.h
         SpaceCadetPinball/fullscrn.cpp
@@ -75,15 +133,36 @@ set(SOURCE_FILES
         SpaceCadetPinball/pb.cpp
         SpaceCadetPinball/pb.h
         SpaceCadetPinball/pch.h
+        SpaceCadetPinball/PeResource.cpp
+        SpaceCadetPinball/PeResource.h
+        SpaceCadetPinball/PostEffect.cpp
+        SpaceCadetPinball/PostEffect.h
+        SpaceCadetPinball/Compositor.cpp
+        SpaceCadetPinball/Compositor.h
+        SpaceCadetPinball/shaders/PostEffectShaders.h
         SpaceCadetPinball/proj.cpp
         SpaceCadetPinball/proj.h
         SpaceCadetPinball/render.cpp
         SpaceCadetPinball/render.h
+        SpaceCadetPinball/replay.cpp
+        SpaceCadetPinball/replay.h
+        SpaceCadetPinball/RecordingViewer.cpp
+        SpaceCadetPinball/RecordingViewer.h
+        SpaceCadetPinball/Rumble.cpp
+        SpaceCadetPinball/Rumble.h
+        SpaceCadetPinball/TableArt.cpp
+        SpaceCadetPinball/TableArt.h
+        SpaceCadetPinball/Upscale.cpp
+        SpaceCadetPinball/Upscale.h
         SpaceCadetPinball/score.cpp
         SpaceCadetPinball/score.h
         SpaceCadetPinball/Sound.cpp
         SpaceCadetPinball/Sound.h
         SpaceCadetPinball/SpaceCadetPinball.cpp
+        SpaceCadetPinball/TAccelerator.cpp
+        SpaceCadetPinball/TAccelerator.h
+        SpaceCadetPinball/TAnimatedBlocker.cpp
+        SpaceCadetPinball/TAnimatedBlocker.h
         SpaceCadetPinball/TBall.cpp
         SpaceCadetPinball/TBall.h
         SpaceCadetPinball/TBlocker.cpp
@@ -98,6 +177,8 @@ set(SOURCE_FILES
         SpaceCadetPinball/TComponentGroup.h
         SpaceCadetPinball/TDemo.cpp
         SpaceCadetPinball/TDemo.h
+        SpaceCadetPinball/TDiverter.cpp
+        SpaceCadetPinball/TDiverter.h
         SpaceCadetPinball/TDrain.cpp
         SpaceCadetPinball/TDrain.h
         SpaceCadetPinball/TEdgeBox.h
@@ -129,8 +210,12 @@ set(SOURCE_FILES
         SpaceCadetPinball/TLightGroup.h
         SpaceCadetPinball/TLightRollover.cpp
         SpaceCadetPinball/TLightRollover.h
+        SpaceCadetPinball/TLightSweeps.cpp
+        SpaceCadetPinball/TLightSweeps.h
         SpaceCadetPinball/TLine.cpp
         SpaceCadetPinball/TLine.h
+        SpaceCadetPinball/TMagnet.cpp
+        SpaceCadetPinball/TMagnet.h
         SpaceCadetPinball/TOneway.cpp
         SpaceCadetPinball/TOneway.h
         SpaceCadetPinball/TPinballComponent.cpp
@@ -143,6 +228,8 @@ set(SOURCE_FILES
         SpaceCadetPinball/TPopupTarget.h
         SpaceCadetPinball/TRamp.cpp
         SpaceCadetPinball/TRamp.h
+        SpaceCadetPinball/TRampExit.cpp
+        SpaceCadetPinball/TRampExit.h
         SpaceCadetPinball/translations.cpp
         SpaceCadetPinball/translations.h
         SpaceCadetPinball/TRollover.cpp
@@ -155,6 +242,10 @@ set(SOURCE_FILES
         SpaceCadetPinball/TSound.h
         SpaceCadetPinball/TTableLayer.cpp
         SpaceCadetPinball/TTableLayer.h
+        SpaceCadetPinball/TableRules.cpp
+        SpaceCadetPinball/TableRules.h
+        SpaceCadetPinball/TableView.cpp
+        SpaceCadetPinball/TableView.h
         SpaceCadetPinball/TTextBox.cpp
         SpaceCadetPinball/TTextBox.h
         SpaceCadetPinball/TTextBoxMessage.cpp
@@ -169,25 +260,65 @@ set(SOURCE_FILES
         SpaceCadetPinball/winmain.h
         SpaceCadetPinball/zdrv.cpp
         SpaceCadetPinball/zdrv.h
+        SpaceCadetPinball/DebugOverlay.cpp
+        SpaceCadetPinball/DebugOverlay.h
+        SpaceCadetPinball/DefinitiveEdition.cpp
+        SpaceCadetPinball/DefinitiveEdition.h
+        SpaceCadetPinball/DefinitiveFontData.h
+        SpaceCadetPinball/DefinitiveFrontEnd.cpp
+        SpaceCadetPinball/DefinitiveFrontEnd.h
+        SpaceCadetPinball/DefinitiveGuide.cpp
+        SpaceCadetPinball/DefinitiveGuide.h
+        SpaceCadetPinball/DefinitiveHud.cpp
+        SpaceCadetPinball/DefinitiveHud.h
+        SpaceCadetPinball/DefinitiveInGame.cpp
+        SpaceCadetPinball/DefinitiveScene.cpp
+        SpaceCadetPinball/DefinitiveScene.h
+        SpaceCadetPinball/DefinitiveRecordings.cpp
+        SpaceCadetPinball/DefinitiveRecordings.h
+        SpaceCadetPinball/DefinitiveSettings.cpp
+        SpaceCadetPinball/DefinitiveSettings.h
+        SpaceCadetPinball/DefinitiveStats.cpp
+        SpaceCadetPinball/DefinitiveStats.h
+        SpaceCadetPinball/DefinitiveStatsScreen.cpp
+        SpaceCadetPinball/DefinitiveStatsScreen.h
+        SpaceCadetPinball/DefinitiveText.cpp
+        SpaceCadetPinball/DefinitiveText.h
+        SpaceCadetPinball/DefinitiveTheme.cpp
+        SpaceCadetPinball/DefinitiveTheme.h
+        SpaceCadetPinball/DefinitiveUi.cpp
+        SpaceCadetPinball/DefinitiveUi.h
+        )
+
+# Space Cadet 2026's fonts, vendored in third_party/fonts, become byte arrays at build time (DefinitiveFontData.h)
+file(GLOB SCP_FONTS CONFIGURE_DEPENDS third_party/fonts/*.ttf)
+set(SCP_FONT_DATA ${CMAKE_CURRENT_BINARY_DIR}/generated/DefinitiveFontData.cpp)
+add_custom_command(OUTPUT ${SCP_FONT_DATA}
+        COMMAND ${CMAKE_COMMAND} -DFONT_DIR=${CMAKE_CURRENT_SOURCE_DIR}/third_party/fonts -DOUTPUT=${SCP_FONT_DATA}
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/EmbedFonts.cmake
+        DEPENDS ${SCP_FONTS} cmake/EmbedFonts.cmake
+        COMMENT "Embedding the fonts in third_party/fonts"
+        VERBATIM
+        )
+list(APPEND SOURCE_FILES ${SCP_FONT_DATA})
+
+# Vendored ImGui, a separate library so that it gets neither the game's precompiled header nor its warnings
+set(IMGUI_SOURCE_FILES
         SpaceCadetPinball/imconfig.h
         SpaceCadetPinball/imgui_internal.h
         SpaceCadetPinball/imgui.cpp
         SpaceCadetPinball/imgui.h
-        SpaceCadetPinball/imgui_sdl.cpp
-        SpaceCadetPinball/imgui_sdl.h
         SpaceCadetPinball/imgui_draw.cpp
         SpaceCadetPinball/imgui_widgets.cpp
         SpaceCadetPinball/imgui_tables.cpp
         SpaceCadetPinball/imgui_demo.cpp
-        SpaceCadetPinball/imgui_impl_sdl.cpp
-        SpaceCadetPinball/imgui_impl_sdl.h
-        SpaceCadetPinball/imgui_impl_sdlrenderer.h
-        SpaceCadetPinball/imgui_impl_sdlrenderer.cpp
+        SpaceCadetPinball/imgui_impl_sdl3.cpp
+        SpaceCadetPinball/imgui_impl_sdl3.h
+        SpaceCadetPinball/imgui_impl_sdlrenderer3.cpp
+        SpaceCadetPinball/imgui_impl_sdlrenderer3.h
         SpaceCadetPinball/imstb_textedit.h
         SpaceCadetPinball/imstb_rectpack.h
         SpaceCadetPinball/imstb_truetype.h
-        SpaceCadetPinball/DebugOverlay.cpp
-        SpaceCadetPinball/DebugOverlay.h
         )
 
 # On Windows, include resource file with the icon
@@ -196,48 +327,178 @@ if(WIN32)
     list(APPEND SOURCE_FILES SpaceCadetPinball/SpaceCadetPinball.rc)
 endif(WIN32)
 
-add_executable(SpaceCadetPinball ${SOURCE_FILES})
-
-# Skip pch on foreign code
-set_source_files_properties(
-        SpaceCadetPinball/imgui.cpp
-        SpaceCadetPinball/imgui_sdl.cpp
-        SpaceCadetPinball/imgui_draw.cpp
-        SpaceCadetPinball/imgui_widgets.cpp
-        SpaceCadetPinball/imgui_tables.cpp
-        SpaceCadetPinball/imgui_demo.cpp
-        SpaceCadetPinball/imgui_impl_sdl.cpp
-        SpaceCadetPinball/imgui_impl_sdlrenderer.cpp
-        PROPERTIES SKIP_PRECOMPILE_HEADERS 1
-)
-
-if(${CMAKE_VERSION} VERSION_GREATER "3.16.0" OR ${CMAKE_VERSION} VERSION_EQUAL "3.16.0")
-    target_precompile_headers(SpaceCadetPinball
-            PUBLIC
-            SpaceCadetPinball/pch.h
+# A test build's game data goes into the Windows executable as a tar archive, which BundledData.cpp unpacks at the
+# first start. It is packed at configure time; changing a file in the folder configures again. The web build preloads
+# the folder instead (below).
+if(SCP_BUNDLED_DATA AND NOT EMSCRIPTEN)
+    if(NOT WIN32)
+        message(FATAL_ERROR "SCP_BUNDLED_DATA is for Windows and web builds")
+    endif()
+    file(GLOB_RECURSE SCP_BUNDLED_FILES LIST_DIRECTORIES false RELATIVE ${SCP_BUNDLED_DATA} ${SCP_BUNDLED_DATA}/*)
+    list(SORT SCP_BUNDLED_FILES)
+    if(NOT SCP_BUNDLED_FILES)
+        message(FATAL_ERROR "SCP_BUNDLED_DATA has no files: ${SCP_BUNDLED_DATA}")
+    endif()
+    set(SCP_BUNDLED_ARCHIVE ${CMAKE_CURRENT_BINARY_DIR}/generated/BundledData.tar)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/generated)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E tar cf ${SCP_BUNDLED_ARCHIVE} --format=gnutar --mtime=2000-01-01
+                            -- ${SCP_BUNDLED_FILES}
+            WORKING_DIRECTORY ${SCP_BUNDLED_DATA}
+            COMMAND_ERROR_IS_FATAL ANY
             )
+    # The folder it unpacks into is named after each file's name and content, not the archive, whose headers also
+    # hold the owner and mode of whoever packed it; so the same data names the same folder from any toolchain
+    set(SCP_BUNDLED_CONTENTS "")
+    foreach(file IN LISTS SCP_BUNDLED_FILES)
+        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${SCP_BUNDLED_DATA}/${file})
+        file(SHA256 ${SCP_BUNDLED_DATA}/${file} SCP_BUNDLED_FILE_HASH)
+        string(APPEND SCP_BUNDLED_CONTENTS "${SCP_BUNDLED_FILE_HASH} ${file}\n")
+    endforeach()
+    string(SHA256 SCP_BUNDLED_HASH "${SCP_BUNDLED_CONTENTS}")
+    string(SUBSTRING ${SCP_BUNDLED_HASH} 0 16 SCP_BUNDLED_HASH)
+    set(SCP_BUNDLED_RC ${CMAKE_CURRENT_BINARY_DIR}/generated/BundledData.rc)
+    file(CONFIGURE OUTPUT ${SCP_BUNDLED_RC} CONTENT "BUNDLEDDATA RCDATA \"${SCP_BUNDLED_ARCHIVE}\"\n")
+    set_source_files_properties(${SCP_BUNDLED_RC} PROPERTIES LANGUAGE RC OBJECT_DEPENDS ${SCP_BUNDLED_ARCHIVE})
+    list(APPEND SOURCE_FILES ${SCP_BUNDLED_RC})
+    message(STATUS "Bundled game data: ${SCP_BUNDLED_DATA}, ${SCP_BUNDLED_HASH}")
 endif()
 
-target_link_libraries(SpaceCadetPinball ${SDL2_LIBRARY} ${SDL2_MIXER_LIBRARY})
+add_library(imgui STATIC ${IMGUI_SOURCE_FILES})
+target_link_libraries(imgui PUBLIC ${SDL_LIBRARIES})
 
-# On Windows, copy DLL to output
-if(WIN32)
-    list(GET SDL2_LIBRARY -1 SDL2_DLL_PATH)
-    list(GET SDL2_MIXER_LIBRARY -1 SDL2_MIXER_DLL_PATH)
-    get_filename_component(SDL2_DLL_PATH ${SDL2_DLL_PATH} DIRECTORY)
-    get_filename_component(SDL2_MIXER_DLL_PATH ${SDL2_MIXER_DLL_PATH} DIRECTORY)
-    if(MINGW)
-        string(REGEX REPLACE "lib$" "bin" SDL2_DLL_PATH ${SDL2_DLL_PATH})
-        string(REGEX REPLACE "lib$" "bin" SDL2_MIXER_DLL_PATH ${SDL2_MIXER_DLL_PATH})
+# Vendored MMPX magnifies the table's art for the Upscaled Art option
+add_library(mmpx STATIC third_party/MMPX/mmpx.c third_party/MMPX/mmpx.h)
+target_include_directories(mmpx PUBLIC third_party/MMPX)
+
+# Vendored TinySoundFont plays MIDI music with a SoundFont where there is no native MIDI
+add_library(tinysoundfont STATIC
+        third_party/TinySoundFont/TinySoundFont.c
+        third_party/TinySoundFont/tml.h
+        third_party/TinySoundFont/tsf.h
+        third_party/stb/stb_vorbis.c
+        )
+# stb_vorbis.c is compiled through TinySoundFont.c
+set_source_files_properties(third_party/stb/stb_vorbis.c PROPERTIES HEADER_FILE_ONLY ON)
+target_include_directories(tinysoundfont PUBLIC third_party/TinySoundFont)
+if(UNIX)
+    target_link_libraries(tinysoundfont PUBLIC m)
+endif()
+
+add_executable(SpaceCadetPinball ${SOURCE_FILES})
+target_link_libraries(SpaceCadetPinball tinysoundfont mmpx)
+
+# Vendored SDL_native_midi plays MIDI music through the system's synth on Windows and macOS
+if(WIN32 OR APPLE)
+    add_library(native_midi STATIC
+            third_party/SDL_native_midi/include/SDL3_native_midi/SDL_native_midi.h
+            third_party/SDL_native_midi/src/SDL_native_midi_common.c
+            third_party/SDL_native_midi/src/SDL_native_midi_common.h
+            third_party/SDL_native_midi/src/SDL_native_midi_macos.c
+            third_party/SDL_native_midi/src/SDL_native_midi_win32.c
+            )
+    target_include_directories(native_midi PUBLIC third_party/SDL_native_midi/include)
+    target_link_libraries(native_midi PUBLIC ${SDL_LIBRARIES})
+    if(WIN32)
+        target_link_libraries(native_midi PUBLIC winmm)
+    else()
+        target_link_libraries(native_midi PUBLIC "-framework AudioToolbox" "-framework AudioUnit" "-framework CoreServices")
     endif()
-    message(STATUS "copy paths='${SDL2_DLL_PATH}' '${SDL2_MIXER_DLL_PATH}'") 
+    target_link_libraries(SpaceCadetPinball native_midi)
+    target_compile_definitions(SpaceCadetPinball PRIVATE SCP_NATIVE_MIDI)
+endif()
+
+target_precompile_headers(SpaceCadetPinball
+        PUBLIC
+        SpaceCadetPinball/pch.h
+        )
+
+target_link_libraries(SpaceCadetPinball imgui ${SDL_LIBRARIES})
+
+if(SCP_BUNDLED_DATA AND NOT EMSCRIPTEN)
+    target_compile_definitions(SpaceCadetPinball PRIVATE SCP_BUNDLED_DATA_HASH="${SCP_BUNDLED_HASH}")
+endif()
+if(SCP_BUILD_COMMIT)
+    target_compile_definitions(SpaceCadetPinball PRIVATE SCP_BUILD_COMMIT="${SCP_BUILD_COMMIT}")
+endif()
+
+# Read sources as UTF-8 and keep string literals in UTF-8; MSVC otherwise uses the system code page
+if(MSVC)
+    target_compile_options(SpaceCadetPinball PRIVATE /utf-8)
+    target_compile_options(imgui PRIVATE /utf-8)
+endif()
+
+# tools/check-bidi.sh's harness, which compares DefinitiveText::Shape with a reference; built only when asked for
+add_executable(bidi-harness EXCLUDE_FROM_ALL
+        tools/bidi/harness.cpp
+        SpaceCadetPinball/DefinitiveText.cpp
+        SpaceCadetPinball/translations.cpp
+        )
+target_include_directories(bidi-harness PRIVATE SpaceCadetPinball)
+target_link_libraries(bidi-harness imgui ${SDL_LIBRARIES})
+# In the build folder, not bin/ with the game
+set_target_properties(bidi-harness PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+# Only the game target gets the extra warnings, not vendored SDL and ImGui.
+# Unused parameters are allowed: overrides and callbacks have the signatures their interfaces set.
+if(SCP_WARNINGS)
+    if(MSVC)
+        target_compile_options(SpaceCadetPinball PRIVATE /W4 /wd4100)
+    else()
+        target_compile_options(SpaceCadetPinball PRIVATE -Wall -Wextra -Wno-unused-parameter)
+    endif()
+    set_target_properties(SpaceCadetPinball PROPERTIES COMPILE_WARNING_AS_ERROR ON)
+endif()
+
+if(SCP_SANITIZERS)
+    if(MSVC)
+        message(FATAL_ERROR "SCP_SANITIZERS needs GCC or Clang")
+    endif()
+    set(SCP_SANITIZER_FLAGS -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer)
+    # All targets are instrumented; only the executable is linked (a static library has no link step)
+    foreach(target SpaceCadetPinball imgui tinysoundfont mmpx)
+        target_compile_options(${target} PRIVATE ${SCP_SANITIZER_FLAGS})
+    endforeach()
+    target_link_options(SpaceCadetPinball PRIVATE ${SCP_SANITIZER_FLAGS})
+endif()
+
+# On Windows with installed SDL packages, copy the DLLs next to the executable
+if(WIN32 AND NOT SCP_VENDORED_SDL)
     add_custom_command(TARGET SpaceCadetPinball POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDL2_DLL_PATH}/SDL2.dll" $<TARGET_FILE_DIR:SpaceCadetPinball>
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDL2_MIXER_DLL_PATH}/SDL2_mixer.dll" $<TARGET_FILE_DIR:SpaceCadetPinball>
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_RUNTIME_DLLS:SpaceCadetPinball> $<TARGET_FILE_DIR:SpaceCadetPinball>
+        COMMAND_EXPAND_LISTS
         )
 endif()
 
-if(UNIX AND NOT APPLE)
+# The web build: one page with the game, which the player gives their game data in the browser (Platform/Web)
+if(EMSCRIPTEN)
+    set_target_properties(SpaceCadetPinball PROPERTIES SUFFIX ".html")
+    target_link_options(SpaceCadetPinball PRIVATE
+        # The main loop stays a loop and yields to the browser while it waits for the next frame
+        -sASYNCIFY
+        -sALLOW_MEMORY_GROWTH=1
+        -sINITIAL_MEMORY=128MB
+        -sMAXIMUM_MEMORY=2GB
+        -sSTACK_SIZE=1MB
+        # IndexedDB keeps the player's game data and settings; the page starts the game once they are in place
+        -lidbfs.js
+        -sFORCE_FILESYSTEM=1
+        -sINVOKE_RUN=0
+        -sEXIT_RUNTIME=0
+        "-sEXPORTED_RUNTIME_METHODS=['FS','ENV','callMain','addRunDependency','removeRunDependency']"
+        "--shell-file=${CMAKE_CURRENT_SOURCE_DIR}/Platform/Web/shell.html"
+        )
+    set_property(TARGET SpaceCadetPinball APPEND PROPERTY LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Platform/Web/shell.html")
+    # A test build's game data: SpaceCadetPinball.data, next to the .wasm, which the page loads into /bundled before
+    # the game starts. The page then skips asking for the player's files.
+    if(SCP_BUNDLED_DATA)
+        target_link_options(SpaceCadetPinball PRIVATE "SHELL:--preload-file \"${SCP_BUNDLED_DATA}@/bundled\"")
+        target_compile_definitions(SpaceCadetPinball PRIVATE SCP_BUNDLED_DATA_PRELOADED)
+        file(GLOB_RECURSE SCP_BUNDLED_FILES LIST_DIRECTORIES false CONFIGURE_DEPENDS ${SCP_BUNDLED_DATA}/*)
+        set_property(TARGET SpaceCadetPinball APPEND PROPERTY LINK_DEPENDS ${SCP_BUNDLED_FILES})
+    endif()
+endif()
+
+if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
 	include(GNUInstallDirs)
 	install(TARGETS "${PROJECT_NAME}" RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 	install(FILES "${CMAKE_SOURCE_DIR}/Platform/Linux/${PROJECT_NAME}.desktop" DESTINATION "share/applications")

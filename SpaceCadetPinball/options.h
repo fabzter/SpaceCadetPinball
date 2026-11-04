@@ -1,6 +1,7 @@
 #pragma once
 
 enum class Msg : int;
+enum class Tables;
 
 enum class Menu1:int
 {
@@ -30,8 +31,14 @@ enum class Menu1:int
 	WindowUniformScale = 600,
 	WindowLinearFilter = 601,
 	WindowIntegerScale = 602,
+	WindowBackdrop = 603,
+	WindowStackedLayout = 604,
+	WindowUpscaledArt = 605,
 	Prefer3DPBGameData = 700,
 };
+
+// The analog triggers, which SDL reports as axes, bind as two extra GameController inputs
+constexpr int GamepadLeftTrigger = 100, GamepadRightTrigger = 101;
 
 enum class InputTypes
 {
@@ -81,6 +88,9 @@ enum class GameBindings
 	ShowControlDialog,
 	ToggleMenuDisplay,
 	Exit,
+	ToggleUpscaledArt,
+	// Last, so saved and recorded bindings keep their numbers
+	ToggleEdition,
 	Max
 };
 
@@ -94,6 +104,14 @@ constexpr int operator~(const GameBindings& value)
 	return static_cast<int>(value);
 }
 
+// Options.Edition: Definitive is Space Cadet 2026, Classic the game as it was
+enum class Editions : int
+{
+	Classic = 0,
+	Definitive = 1,
+	Max
+};
+
 class options
 {
 public:
@@ -102,15 +120,37 @@ public:
 	                     DefUps = 120, DefFps = 60;
 	// Original uses 8 sound channels
 	static constexpr int MaxSoundChannels = 32, MinSoundChannels = 1, DefSoundChannels = 8;
-	static constexpr int MaxVolume = MIX_MAX_VOLUME, MinVolume = 0, DefVolume = MaxVolume;
+	// SDL2_mixer's MIX_MAX_VOLUME, kept so that saved volumes keep their meaning
+	static constexpr int MaxVolume = 128, MinVolume = 0, DefVolume = MaxVolume;
+	// Key Bindings Version: keyboard bindings are scancodes; settings without it hold keycodes
+	static constexpr int KeyBindingsScancodes = 1;
 	static struct optionsStruct Options;
 	static std::vector<struct OptionBase*> AllOptions;
 
 	static void InitPrimary();
 	static void InitSecondary();
 	static void uninit();
+	// Writes every option into the settings, which ImGui keeps in its .ini
+	static void Save();
 	static const std::string& GetSetting(const std::string& key, const std::string& defaultValue);
 	static void SetSetting(const std::string& key, const std::string& value);
+	// Unlike GetSetting, doesn't add the key when it is missing
+	static bool HasSetting(const std::string& key);
+	static void RemoveSetting(const std::string& key);
+	// Settings kept for each table start with this: none for 3D Pinball, which keeps the original keys
+	static const char* TableKeyPrefix();
+	// The prefix of a table that may not be the one loaded, for showing what it saved
+	static const char* TableKeyPrefix(Tables table);
+	static constexpr const char* SpaceCadetKeyPrefix = "";
+	static constexpr const char* FullTiltKeyPrefix = "FullTilt.";
+	static constexpr const char* FullTiltDemoKeyPrefix = "FullTiltDemo.";
+	static constexpr const char* DragonsKeepKeyPrefix = "DragonsKeep.";
+	static constexpr const char* SkulduggeryKeyPrefix = "Skulduggery.";
+	static constexpr std::array TableKeyPrefixes{SpaceCadetKeyPrefix, FullTiltKeyPrefix, FullTiltDemoKeyPrefix,
+												 DragonsKeepKeyPrefix, SkulduggeryKeyPrefix};
+	// TableKeyPrefix, or none while the table hasn't saved its own value for key yet
+	static std::string TableKeyPrefixToRead(const std::string& key);
+	static std::string TableKeyPrefixToRead(const std::string& key, Tables table);
 	static int get_int(LPCSTR lpValueName, int defaultValue);
 	static void set_int(LPCSTR lpValueName, int data);
 	static float get_float(LPCSTR lpValueName, float defaultValue);
@@ -118,15 +158,37 @@ public:
 	static void GetInput(const std::string& rowName, GameInput (&values)[3]);
 	static void SetInput(const std::string& rowName, GameInput (&values)[3]);
 	static void toggle(Menu1 uIDCheckItem);
+	// A folder as the game data search joins file names to it: with a separator at its end, unless it is empty
+	static std::string FolderPath(std::string folder);
 	static void InputDown(GameInput input);
 	static void ShowControlDialog();
 	static void RenderControlDialog();
 	static bool WaitingForInput() { return ControlWaitingForInput; }
+	// The input the next key, mouse or gamepad button is bound to, as when the controls dialog waits; null to stop
+	static void WaitForInput(GameInput* input)
+	{
+		ControlWaitingForInput = input;
+	}
+	static GameInput* InputWaitedFor()
+	{
+		return ControlWaitingForInput;
+	}
 	static std::vector<GameBindings> MapGameInput(GameInput key);
 	static void ResetAllOptions();
+	static Editions GetEdition();
+	// Switches to the edition's drawing options and applies them, also during a game
+	static void SetEdition(Editions edition);
+	// Switches to the edition's drawing options without applying them, before the table is drawn
+	static void SelectEdition(Editions edition);
+	// Settings kept for each edition start with this; Classic keeps the original keys
+	static constexpr const char* DefinitiveKeyPrefix = "Definitive.";
+
 private:
+	friend struct ControlOption;
+
 	static std::unordered_map<std::string, std::string> settings;
 	static bool ShowDialog;
+	static bool MigrateKeycodes;
 	static GameInput* ControlWaitingForInput;
 
 	static void MyUserData_ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* entry, const char* line);
@@ -145,6 +207,10 @@ struct OptionBase
 	virtual void Load() = 0;
 	virtual void Save() const = 0;
 	virtual void Reset() = 0;
+	// Only options kept for each edition act on it
+	virtual void ShowEdition(Editions edition)
+	{
+	}
 };
 
 template <typename T>
@@ -175,6 +241,20 @@ struct IntOption : OptionBaseT<int>
 
 	void Load() override { V = options::get_int(Name, DefaultValue); }
 	void Save() const override { options::set_int(Name, V); }
+	using OptionBaseT::operator=;
+};
+
+// An int kept for each table, under the table's key prefix
+struct TableIntOption : IntOption
+{
+	TableIntOption(LPCSTR name, int defaultValue) : IntOption(name, defaultValue)
+	{
+	}
+
+	// Loaded again once the table is known (options::InitSecondary)
+	void Load() override;
+	void Save() const override;
+	void Reset() override;
 	using OptionBaseT::operator=;
 };
 
@@ -209,6 +289,64 @@ struct BoolOption : OptionBaseT<bool>
 	using OptionBaseT::operator=;
 };
 
+// A drawing option kept for each edition. V is the value of the edition on show and Other the other edition's;
+// switching swaps them. Classic saves under Name, as before editions existed, and Definitive under
+// options::DefinitiveKeyPrefix + Name.
+template <typename T> struct EditionOptionT : OptionBaseT<T>
+{
+	const T DefinitiveDefault;
+	T Other;
+
+	EditionOptionT(LPCSTR name, T classicDefault, T definitiveDefault) :
+		OptionBaseT<T>(name, classicDefault), DefinitiveDefault(definitiveDefault), Other()
+	{
+	}
+
+	void ShowEdition(Editions edition) override
+	{
+		if (edition != Shown)
+		{
+			std::swap(this->V, Other);
+			Shown = edition;
+		}
+	}
+
+	void Load() override
+	{
+		Value(Editions::Classic) = static_cast<T>(options::get_int(this->Name, this->DefaultValue));
+		Value(Editions::Definitive) = static_cast<T>(options::get_int(DefinitiveKey().c_str(), DefinitiveDefault));
+	}
+
+	void Save() const override
+	{
+		options::set_int(this->Name, Shown == Editions::Classic ? this->V : Other);
+		options::set_int(DefinitiveKey().c_str(), Shown == Editions::Definitive ? this->V : Other);
+	}
+
+	void Reset() override
+	{
+		Value(Editions::Classic) = this->DefaultValue;
+		Value(Editions::Definitive) = DefinitiveDefault;
+	}
+
+	using OptionBaseT<T>::operator=;
+
+private:
+	Editions Shown = Editions::Classic;
+
+	T& Value(Editions edition)
+	{
+		return edition == Shown ? this->V : Other;
+	}
+	std::string DefinitiveKey() const
+	{
+		return options::DefinitiveKeyPrefix + std::string{this->Name};
+	}
+};
+
+using EditionBoolOption = EditionOptionT<bool>;
+using EditionIntOption = EditionOptionT<int>;
+
 struct ControlOption : OptionBase
 {
 	const Msg Description;
@@ -224,16 +362,8 @@ struct ControlOption : OptionBase
 	{
 	}
 
-	void Load() override
-	{
-		for (auto i = 0u; i <= 2; i++)
-		{
-			auto name = std::string{ Name } + " " + std::to_string(i);
-			Inputs[i].Type = static_cast<InputTypes>(options::get_int((name + " type").c_str(),
-				static_cast<int>(Defaults[i].Type)));
-			Inputs[i].Value = options::get_int((name + " input").c_str(), Defaults[i].Value);
-		}
-	}
+	// Converts saved keycodes to scancodes while options::InitPrimary migrates old settings
+	void Load() override;
 
 	void Save() const override
 	{
@@ -261,10 +391,10 @@ struct optionsStruct
 	BoolOption Music;
 	BoolOption FullScreen;
 	IntOption Players;
-	IntOption Resolution;
+	TableIntOption Resolution;
 	FloatOption UIScale;
 	BoolOption UniformScaling;
-	BoolOption LinearFiltering;
+	EditionBoolOption LinearFiltering;
 	IntOption FramesPerSecond;
 	IntOption UpdatesPerSecond;
 	BoolOption ShowMenu;
@@ -272,7 +402,7 @@ struct optionsStruct
 	IntOption SoundChannels;
 	BoolOption HybridSleep;
 	BoolOption Prefer3DPBGameData;
-	BoolOption IntegerScaling;
+	EditionBoolOption IntegerScaling;
 	IntOption SoundVolume;
 	IntOption MusicVolume;
 	BoolOption SoundStereo;
@@ -289,4 +419,43 @@ struct optionsStruct
 	StringOption FontFileName;
 	StringOption Language;
 	BoolOption HideCursor;
+	EditionBoolOption Backdrop;
+	EditionBoolOption StackedLayout;
+	IntOption PostProcessing;
+	BoolOption Rumble;
+	BoolOption MatchRefreshRate;
+	EditionBoolOption UpscaledArt;
+	EditionIntOption UpscaleFactor;
+	IntOption KeyBindingsVersion;
+	IntOption Edition;
+	// The one-time hint that names the key for switching editions
+	BoolOption EditionHintShown;
+	// The folder the player chose for the game data, searched before the usual places; empty when none was chosen
+	StringOption GameDataFolder;
+	// The table the player chose (pb::TableKey), loaded when its data is found
+	StringOption Table;
+	// Space Cadet 2026's effects on SDL's GPU renderer (Compositor)
+	BoolOption Lighting;
+	BoolOption LampGlow;
+	BoolOption ShadedBall;
+	// The table's own panel art at the top of Space Cadet 2026's HUD
+	BoolOption PanelArt;
+	// No glow pulse and no shaking of the table when it is nudged, in Space Cadet 2026
+	BoolOption ReducedMotion;
+	// Quarter turns clockwise of Space Cadet 2026's picture, for a monitor on its side (fullscrn::Rotation)
+	IntOption Rotation;
+	// Space Cadet 2026's accessibility: text size in percent (100, 125 or 150), a HUD in high contrast, and colours
+	// that don't tell things apart by red and green alone (0 standard, 1 red-green safe)
+	IntOption TextSize;
+	BoolOption HighContrastHud;
+	IntOption ColourVision;
+	// Space Cadet 2026's sound (Sound::SetEffects): a room's reverb and wider stereo on the sound effects, and the
+	// sound pack in use, a folder name in Sound::PackFolder, empty for none
+	BoolOption RoomReverb;
+	BoolOption WideStereo;
+	StringOption SoundPack;
+	// Each start records the session into the recordings folder (RecordingViewer)
+	BoolOption RecordSessions;
+	// Whether the player has set Reduced Motion; until then the web build follows the browser's
+	BoolOption ReducedMotionChosen;
 };

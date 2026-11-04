@@ -2,11 +2,12 @@
 #include "pb.h"
 
 
-#include "control.h"
+#include "TableRules.h"
 #include "fullscrn.h"
 #include "high_score.h"
 #include "proj.h"
 #include "render.h"
+#include "replay.h"
 #include "loader.h"
 #include "midi.h"
 #include "nudge.h"
@@ -26,7 +27,11 @@
 #include "TFlipper.h"
 #include "TPinballTable.h"
 #include "TTextBox.h"
+#include "TableView.h"
 #include "translations.h"
+
+#include <filesystem>
+#include <format>
 
 TPinballTable* pb::MainTable = nullptr;
 DatFile* pb::record_table = nullptr;
@@ -35,6 +40,11 @@ GameModes pb::game_mode = GameModes::GameOver;
 float pb::time_now = 0, pb::time_next = 0, pb::time_ticks_remainder = 0;
 float pb::BallMaxSpeed, pb::BallHalfRadius, pb::BallToBallCollisionDistance;
 float pb::IdleTimerMs = 0;
+bool pb::UiHoldsInput = false;
+bool pb::GameEnded = true;
+Tables pb::Table = Tables::SpaceCadet3DPB;
+std::optional<Tables> pb::RequestedTable;
+std::vector<TableData> pb::FoundTables;
 bool pb::FullTiltMode = false, pb::FullTiltDemoMode = false, pb::cheat_mode = false, pb::demo_mode = false, pb::CreditsActive = false;
 std::string pb::DatFileName, pb::BasePath;
 ImU32 pb::TextBoxColor;
@@ -55,6 +65,9 @@ int pb::init()
 	get_rc_int(Msg::TextBoxUseBitmapFont, &useBmpFont);
 	if (useBmpFont)
 		score::load_msg_font("pbmsg_ft");
+	// The bonus tables' pictures, which aren't text, so in every language
+	if (BonusTable())
+		score::msg_font2p = score::load_msg_font_group("font2");
 
 	if (!record_table)
 		return 1;
@@ -92,6 +105,7 @@ int pb::init()
 		backgroundBmp,
 		0,
 		0);
+	render::InitialBackground = backgroundBmp;
 
 	loader::loadfrom(record_table);
 
@@ -120,6 +134,7 @@ int pb::init()
 
 int pb::uninit()
 {
+	TableView::Clear();
 	score::unload_msg_font();
 	loader::unload();
 	delete record_table;
@@ -131,54 +146,270 @@ int pb::uninit()
 	return 0;
 }
 
+namespace
+{
+	std::string ToUpper(std::string text)
+	{
+		std::transform(text.begin(), text.end(), text.begin(),
+					   [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+		return text;
+	}
+
+	std::string ToLower(std::string text)
+	{
+		std::transform(text.begin(), text.end(), text.begin(),
+					   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+		return text;
+	}
+
+	// What the game knows of each DAT file it can load: the table it holds, the key the player's choice is saved
+	// as, the folder of a Full Tilt! installation it is in, the window title, the table's name and game for the
+	// table menus, which stay as they are in every language, and the folder of Full Tilt!'s Windows 3.1 release
+	// where it differs. Space Cadet's DAT files share a key, and are tried in this order.
+	struct TableInfo
+	{
+		Tables Table;
+		const char* DatFileName;
+		const char* Key;
+		const char* FullTiltFolder;
+		Msg Caption;
+		const char* Name;
+		const char* Source;
+		const char* Win31Folder = nullptr;
+	};
+
+	constexpr std::array TableInfos{
+		TableInfo{Tables::SpaceCadetFullTilt, "CADET.DAT", "SpaceCadet", "CADET", Msg::FullTilt_Caption, "Space Cadet",
+				  "Full Tilt! Pinball"},
+		TableInfo{Tables::SpaceCadet3DPB, "PINBALL.DAT", "SpaceCadet", "CADET", Msg::STRING139, "Space Cadet",
+				  "3D Pinball for Windows"},
+		TableInfo{Tables::FullTiltDemo, "DEMO.DAT", "SpaceCadet", "CADET", Msg::FullTilt_Caption, "Space Cadet",
+				  "Full Tilt! Pinball demo"},
+		TableInfo{Tables::DragonsKeep, "DRAGON.DAT", "DragonsKeep", "DRAGON", Msg::Dragon_Caption, "Dragon's Keep",
+				  "Full Tilt! Pinball"},
+		TableInfo{Tables::Skulduggery, "PIRATES.DAT", "Skulduggery", "PIRATE", Msg::Skulduggery_Caption, "Skulduggery",
+				  "Full Tilt! Pinball", "PIRATES"},
+	};
+
+	const TableInfo& Info(Tables table)
+	{
+		auto info = std::ranges::find(TableInfos, table, &TableInfo::Table);
+		assertm(info != TableInfos.end(), "pb: a table that can't be loaded yet");
+		return info != TableInfos.end() ? *info : TableInfos[0];
+	}
+
+	// A table's DAT files, in the order they are tried; the "Prefer 3DPB Data" option swaps CADET.DAT and PINBALL.DAT
+	std::vector<std::string> DatFileNames(Tables table)
+	{
+		std::vector<std::string> names;
+		for (const auto& info : TableInfos)
+		{
+			if (info.Key == std::string_view{Info(table).Key})
+				names.emplace_back(info.DatFileName);
+		}
+		if (names.size() > 1 && options::Options.Prefer3DPBGameData)
+			std::swap(names[0], names[1]);
+		return names;
+	}
+
+	// Whether <name>, in upper case, is a folder a Full Tilt! installation keeps a table in, with its EXE, DAT and
+	// SOUND folder: any table's FullTiltFolder, or its Win31Folder where the Windows 3.1 release differs
+	bool IsFullTiltFolder(std::string_view name)
+	{
+		return std::ranges::any_of(
+			TableInfos, [name](const TableInfo& info)
+			{ return name == info.FullTiltFolder || (info.Win31Folder && name == info.Win31Folder); });
+	}
+
+	bool IsSeparator(char c)
+	{
+#ifdef _WIN32
+		return c == '/' || c == '\\';
+#else
+		return c == '/';
+#endif
+	}
+
+	// The folders to look in for a table, given a folder that ends in a separator or is empty: the folder, the
+	// table's Full Tilt! folders under it, and those folders next to it when the folder is one of Full Tilt!'s.
+	// Full Tilt!'s CD has the folders in upper case, its installer wrote them capitalized ("Dragon").
+	std::vector<std::string> TableFolders(const std::string& folder, Tables table)
+	{
+		std::vector<std::string> own{Info(table).FullTiltFolder};
+		if (Info(table).Win31Folder)
+			own.emplace_back(Info(table).Win31Folder);
+		std::vector<std::string> spellings;
+		for (const auto& upper : own)
+		{
+			auto lower = ToLower(upper);
+			spellings.insert(spellings.end(), {upper, lower, upper.substr(0, 1) + lower.substr(1)});
+		}
+
+		std::vector<std::string> folders{folder};
+		for (const auto& spelling : spellings)
+			folders.push_back(folder + spelling + PathSeparator);
+
+		// The working directory is the empty folder: its name comes from its path, and its parent is ".."
+		std::string name;
+		std::string parent;
+		if (folder.empty())
+		{
+			std::error_code error;
+			auto path = std::filesystem::current_path(error).filename().u8string();
+			name = {path.begin(), path.end()};
+			parent = std::string{".."} + PathSeparator;
+		}
+		else
+		{
+			auto end = folder.size() - 1;
+			auto start = end;
+			while (start > 0 && !IsSeparator(folder[start - 1]))
+				start--;
+			name = folder.substr(start, end - start);
+			parent = folder.substr(0, start);
+		}
+		// A table's own folder isn't next to itself
+		name = ToUpper(name);
+		if (std::ranges::find(own, name) != own.end() || !IsFullTiltFolder(name))
+			return folders;
+		for (const auto& spelling : spellings)
+			folders.push_back(parent + spelling + PathSeparator);
+		return folders;
+	}
+
+
+	// The table's DAT file in the folder: its name as found, or empty
+	std::string FindDatFile(const std::string& folder, Tables table)
+	{
+		for (const auto& datFileName : DatFileNames(table))
+		{
+			auto fileName = pb::FindFile(folder, datFileName);
+			if (!fileName.empty())
+				return fileName;
+		}
+		return {};
+	}
+
+	std::optional<TableData> FindTable(const std::vector<const char*>& dataSearchPaths, Tables table)
+	{
+		for (auto path : dataSearchPaths)
+		{
+			if (!path)
+				continue;
+			for (const auto& folder : TableFolders(path, table))
+			{
+				if (auto fileName = FindDatFile(folder, table); !fileName.empty())
+					return TableData{pb::TableOf(fileName), folder, fileName};
+			}
+		}
+		return {};
+	}
+} // namespace
+
+std::vector<TableData> pb::FindTables(const std::vector<const char*>& dataSearchPaths)
+{
+	using enum Tables;
+	std::vector<TableData> found;
+	for (auto table : {SpaceCadet3DPB, DragonsKeep, Skulduggery})
+	{
+		if (auto data = FindTable(dataSearchPaths, table))
+			found.push_back(std::move(*data));
+	}
+	return found;
+}
+
 void pb::SelectDatFile(const std::vector<const char*>& dataSearchPaths)
 {
 	DatFileName.clear();
+	BasePath.clear();
+	Table = Tables::SpaceCadet3DPB;
 	FullTiltDemoMode = FullTiltMode = false;
 
-	std::string datFileNames[3]
+	FoundTables = FindTables(dataSearchPaths);
+	auto wanted = RequestedTable ? *RequestedTable : TableFromKey(options::Options.Table.V);
+	auto chosen = std::find_if(FoundTables.begin(), FoundTables.end(),
+							   [wanted](const TableData& data) { return SameTable(data.Table, wanted); });
+	if (chosen == FoundTables.end())
 	{
-		"CADET.DAT",
-		"PINBALL.DAT",
-		"DEMO.DAT",
-	};
-
-	// Default game data test order: CADET.DAT, PINBALL.DAT, DEMO.DAT
-	if (options::Options.Prefer3DPBGameData)
-	{
-		std::swap(datFileNames[0], datFileNames[1]);
+		// A table asked for without its data is missing data, as is no table at all
+		if (RequestedTable || FoundTables.empty())
+			return;
+		// The player's choice stays saved, for when its data is back
+		chosen = FoundTables.begin();
+		// std::format with fputs, not std::print, which MinGW's GCC 13 lacks
+		auto line =
+			std::format("No data for the table {}, loading {}\n", options::Options.Table.V, TableKey(chosen->Table));
+		fputs(line.c_str(), stdout);
 	}
-	for (auto path : dataSearchPaths)
+
+	BasePath = chosen->Folder;
+	DatFileName = chosen->DatFileName;
+	Table = chosen->Table;
+	FullTiltMode = Table != Tables::SpaceCadet3DPB;
+	FullTiltDemoMode = Table == Tables::FullTiltDemo;
+	fputs(std::format("Loading game from: {}\n", make_path_name(DatFileName)).c_str(), stdout);
+}
+
+void pb::SelectTable(Tables table)
+{
+	if (SameTable(table, Table))
+		return;
+	options::Options.Table.V = TableKey(table);
+	// The choice, not -table's table, loads from now on
+	RequestedTable.reset();
+	winmain::Restart();
+}
+
+Tables pb::TableOf(const std::string& datFileName)
+{
+	auto info = std::ranges::find(TableInfos, ToUpper(datFileName), &TableInfo::DatFileName);
+	return info != TableInfos.end() ? info->Table : Tables::SpaceCadet3DPB;
+}
+
+bool pb::SameTable(Tables a, Tables b)
+{
+	return TableKey(a) == std::string_view{TableKey(b)};
+}
+
+const char* pb::TableKey(Tables table)
+{
+	return Info(table).Key;
+}
+
+Tables pb::TableFromKey(std::string_view key)
+{
+	// Space Cadet's first DAT file stands for all of them
+	auto info = std::ranges::find_if(TableInfos, [key](const TableInfo& entry) { return entry.Key == key; });
+	return info != TableInfos.end() ? info->Table : Tables::SpaceCadet3DPB;
+}
+
+Msg pb::Caption()
+{
+	return Info(Table).Caption;
+}
+
+const char* pb::TableName(Tables table)
+{
+	return Info(table).Name;
+}
+
+const char* pb::TableSource(Tables table)
+{
+	return Info(table).Source;
+}
+
+std::string pb::FindFile(const std::string& folder, const std::string& name)
+{
+	auto upper = ToUpper(name);
+	for (const auto& fileName : {upper, ToLower(upper)})
 	{
-		if (!path)
-			continue;
-
-		BasePath = path;
-		for (const auto& datFileName : datFileNames)
+		if (auto file = fopenu((folder + fileName).c_str(), "r"))
 		{
-			auto fileName = datFileName;
-			for (int i = 0; i < 2; i++)
-			{
-				if (i == 1)
-					std::transform(fileName.begin(), fileName.end(), fileName.begin(),
-					               [](unsigned char c) { return std::tolower(c); });
-
-				auto datFilePath = make_path_name(fileName);
-				auto datFile = fopenu(datFilePath.c_str(), "r");
-				if (datFile)
-				{
-					fclose(datFile);
-					DatFileName = fileName;
-					if (datFileName == "CADET.DAT")
-						FullTiltMode = true;
-					if (datFileName == "DEMO.DAT")
-						FullTiltDemoMode = FullTiltMode = true;
-					printf("Loading game from: %s\n", datFilePath.c_str());
-					return;
-				}
-			}
+			fclose(file);
+			return fileName;
 		}
 	}
+	return {};
 }
 
 void pb::reset_table()
@@ -195,8 +426,8 @@ void pb::firsttime_setup()
 
 void pb::mode_change(GameModes mode)
 {
-	if (CreditsActive && MissTextBox)
-		MissTextBox->Clear(true);
+	if (CreditsActive)
+		TableRules::Current().EndCredits();
 	CreditsActive = false;
 	IdleTimerMs = 0;
 
@@ -242,12 +473,17 @@ void pb::mode_change(GameModes mode)
 
 void pb::toggle_demo()
 {
+	// Starting the demo reads the player count from the options, so the recording keeps it
+	replay::Scope replayScope("t %d", options::Options.Players.V);
 	if (demo_mode)
 	{
 		demo_mode = false;
 		MainTable->Message(MessageCode::Reset, 0.0);
 		mode_change(GameModes::GameOver);
-		MissTextBox->Clear();
+		// A stopped demo has no high scores to check, so it ends here rather than in end_game
+		GameEnded = true;
+		if (MissTextBox)
+			MissTextBox->Clear();
 		InfoTextBox->Display(get_rc_string(Msg::STRING125), -1.0);
 	}
 	else
@@ -258,17 +494,20 @@ void pb::toggle_demo()
 
 void pb::replay_level(bool demoMode)
 {
+	replay::Scope replayScope("n %d %d", demoMode, options::Options.Players.V);
 	demo_mode = demoMode;
 	mode_change(GameModes::InGame);
 	if (options::Options.Music)
 		midi::music_play();
 	MainTable->Message(MessageCode::NewGame, static_cast<float>(options::Options.Players));
+	GameEnded = false;
 }
 
 void pb::ballset(float dx, float dy)
 {
 	// dx and dy are normalized to window, ideally in [-1, 1]
 	static constexpr float sensitivity = 7000;
+	replay::Scope replayScope("m %a %a", dx, dy);
 
 	for (auto ball : MainTable->BallList)
 	{
@@ -288,8 +527,9 @@ void pb::frame(float dtMilliSec)
 		dtMilliSec = 100;
 	if (dtMilliSec <= 0)
 		return;
+	replay::Scope replayScope(dtMilliSec);
 
-	if (FullTiltMode && !demo_mode)
+	if (FullTiltMode && !demo_mode && !UiHoldsInput)
 	{
 		IdleTimerMs += dtMilliSec;
 		if (IdleTimerMs >= 60000 && !CreditsActive)
@@ -331,6 +571,7 @@ void pb::frame(float dtMilliSec)
 		if (nudge::nudge_count > 1.0f)
 			MainTable->tilt(time_now);
 	}
+	TableView::Fill();
 }
 
 void pb::timed_frame(float timeDelta)
@@ -357,7 +598,7 @@ void pb::timed_frame(float timeDelta)
 				ball->StuckCounter = 0;
 			else
 				ball->StuckCounter++;
-			control::UnstuckBall(*ball, time_ticks - ball->LastActiveTime);
+			TableRules::Current().UnstuckBall(*ball, time_ticks - ball->LastActiveTime);
 		}
 	}
 
@@ -485,9 +726,11 @@ void pb::timed_frame(float timeDelta)
 
 void pb::pause_continue()
 {
+	replay::Scope replayScope("p");
 	winmain::single_step ^= true;
 	InfoTextBox->Clear();
-	MissTextBox->Clear();
+	if (MissTextBox)
+		MissTextBox->Clear();
 	if (winmain::single_step)
 	{
 		if (MainTable)
@@ -522,18 +765,67 @@ void pb::pause_continue()
 	}
 }
 
+void pb::toggle_single_step()
+{
+	replay::Scope replayScope("s");
+	winmain::single_step ^= true;
+}
+
 void pb::loose_focus()
 {
+	replay::Scope replayScope("l");
 	if (MainTable)
 		MainTable->Message(MessageCode::LooseFocus, time_now);
 }
 
 void pb::InputUp(GameInput input)
 {
-	if (game_mode != GameModes::InGame || winmain::single_step || demo_mode)
+	BindingsUp(input, options::MapGameInput(input));
+}
+
+void pb::BindingUp(GameBindings binding)
+{
+	BindingsUp(GameInput{}, {binding});
+}
+
+void pb::BindingDown(GameBindings binding)
+{
+	if (options::WaitingForInput())
 		return;
 
-	const auto bindings = options::MapGameInput(input);
+	BindingsDown(GameInput{}, {binding});
+}
+
+bool pb::TableTakesInput()
+{
+	return game_mode == GameModes::InGame && !winmain::single_step && !demo_mode;
+}
+
+void pb::BindingsUp(GameInput input, const std::vector<GameBindings>& bindings)
+{
+	if (!TableTakesInput())
+		return;
+
+	replay::RecordInput(false, input, bindings);
+	GameInputUp(bindings);
+}
+
+void pb::BindingsDown(GameInput input, const std::vector<GameBindings>& bindings)
+{
+	for (const auto binding : bindings)
+	{
+		winmain::HandleGameBinding(binding, true);
+	}
+
+	if (!TableTakesInput())
+		return;
+
+	replay::RecordInput(true, input, bindings);
+	GameInputDown(input, bindings);
+}
+
+void pb::GameInputUp(const std::vector<GameBindings>& bindings)
+{
 	for (const auto binding : bindings)
 	{
 		switch (binding)
@@ -563,28 +855,39 @@ void pb::InputUp(GameInput input)
 
 void pb::InputDown(GameInput input)
 {
+	InputDown(input, input);
+}
+
+void pb::InputDown(GameInput recorded, GameInput bound)
+{
 	if (options::WaitingForInput())
 	{
-		options::InputDown(input);
+		options::InputDown(bound);
 		return;
 	}
 
-	const auto bindings = options::MapGameInput(input);
-	for (const auto binding : bindings)
-	{
-		winmain::HandleGameBinding(binding, true);
-	}
+	BindingsDown(recorded, options::MapGameInput(bound));
+}
 
-	if (game_mode != GameModes::InGame || winmain::single_step || demo_mode)
-		return;
+void pb::KeyUp(SDL_Scancode scancode, SDL_Keycode key)
+{
+	BindingsUp({InputTypes::Keyboard, static_cast<int>(key)}, options::MapGameInput({InputTypes::Keyboard, scancode}));
+}
 
+void pb::KeyDown(SDL_Scancode scancode, SDL_Keycode key)
+{
+	InputDown({InputTypes::Keyboard, static_cast<int>(key)}, {InputTypes::Keyboard, scancode});
+}
+
+void pb::GameInputDown(GameInput input, const std::vector<GameBindings>& bindings)
+{
 	if (CreditsActive)
-		MissTextBox->Clear(true);
+		TableRules::Current().EndCredits();
 	CreditsActive = false;
 	IdleTimerMs = 0;
 
 	if (input.Type == InputTypes::Keyboard)
-		control::pbctrl_bdoor_controller(static_cast<char>(input.Value));
+		TableRules::Current().Cheat(input.Value);
 
 	for (const auto binding : bindings)
 	{
@@ -634,7 +937,7 @@ void pb::InputDown(GameInput input)
 				break;
 			}
 		case 'r':
-			control::cheat_bump_rank();
+			TableRules::Current().CheatBumpRank();
 			break;
 		case 's':
 			MainTable->AddScore(static_cast<int>(RandFloat() * 1000000.0f));
@@ -654,15 +957,18 @@ void pb::InputDown(GameInput input)
 
 void pb::launch_ball()
 {
+	replay::Scope replayScope("b");
 	MainTable->Plunger->Message(MessageCode::PlungerLaunchBall, 0.0f);
 }
 
-void pb::end_game()
+bool pb::end_game()
 {
+	bool highScore = false;
 	int scores[4]{};
 	int scoreIndex[4]{};
 
 	mode_change(GameModes::GameOver);
+	GameEnded = true;
 	int playerCount = MainTable->PlayerCount;
 
 	score_struct_super* scorePtr = MainTable->PlayerScores;
@@ -715,9 +1021,11 @@ void pb::end_game()
 
 				strncpy(entry.Name, playerName, sizeof entry.Name - 1);
 				high_score::show_and_set_high_score_dialog({entry, -1});
+				highScore = true;
 			}
 		}
 	}
+	return highScore;
 }
 
 void pb::high_scores()
@@ -745,10 +1053,19 @@ bool pb::chk_highscore()
 	return false;
 }
 
+void pb::SetUiHoldsInput(bool holds)
+{
+	if (holds == UiHoldsInput)
+		return;
+	replay::Scope replayScope("h %d", holds);
+	UiHoldsInput = holds;
+}
+
 void pb::PushCheat(const std::string& cheat)
 {
+	replay::Scope replayScope("c %s", cheat.c_str());
 	for (auto ch : cheat)
-		control::pbctrl_bdoor_controller(ch);
+		TableRules::Current().Cheat(ch);
 }
 
 LPCSTR pb::get_rc_string(Msg uID)

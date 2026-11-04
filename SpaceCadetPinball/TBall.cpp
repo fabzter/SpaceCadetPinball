@@ -8,6 +8,7 @@
 #include "pb.h"
 #include "proj.h"
 #include "render.h"
+#include "TableRules.h"
 #include "TPinballTable.h"
 #include "TTableLayer.h"
 
@@ -39,7 +40,7 @@ TBall::TBall(TPinballTable* table, int groupIndex) : TCollisionComponent(table, 
 		HasGroupFlag = true;
 		loader::query_visual(groupIndex, 0, &visual);
 		CollisionMask = visual.CollisionGroup;
-		auto floatArr = loader::query_float_attribute(groupIndex, 0, 408);
+		auto floatArr = loader::required_float_attribute(groupIndex, 0, 408);
 		Position = {floatArr[0], floatArr[1], floatArr[3]};
 	}
 
@@ -47,24 +48,34 @@ TBall::TBall(TPinballTable* table, int groupIndex) : TCollisionComponent(table, 
 	groupIndex = loader::query_handle(ballGroupName);
 	if (groupIndex < 0)
 	{
-		ballGroupName[4] = '0' + fullscrn::GetResolution();
+		ballGroupName[4] = static_cast<char>('0' + fullscrn::GetResolution());
 		groupIndex = loader::query_handle(ballGroupName);
 	}
 
-	Radius = *loader::query_float_attribute(groupIndex, 0, 500);
+	Radius = *loader::required_float_attribute(groupIndex, 0, 500);
 
+	// The rules pick each frame's bitmap: the second while Dragon's Keep's PB cheat is on, for a smiley ball
+	auto& rules = TableRules::Current();
+	auto altBall = false;
 	auto visualCount = loader::query_visual_states(groupIndex);
 	for (auto index = 0; index < visualCount; ++index)
 	{
 		loader::query_visual(groupIndex, index, &visual);
+		if (auto altBmp = loader::query_alt_bitmap(groupIndex, index); rules.AltBallFrame(altBmp != nullptr))
+		{
+			visual.Bitmap.Bmp = altBmp;
+			altBall = true;
+		}
 		ListBitmap->push_back(visual.Bitmap);
-		auto visVec = reinterpret_cast<vector3*>(loader::query_float_attribute(groupIndex, index, 501));
+		auto visVec = reinterpret_cast<const vector3*>(loader::required_float_attribute(groupIndex, index, 501));
 		auto zDepth = proj::z_distance(*visVec);
 		VisualZArray[index] = zDepth;
 	}
 	RenderSprite = new render_sprite(VisualTypes::Ball, nullptr, nullptr, 0, 0, nullptr);
+	RenderSprite->AltBall = altBall;
 	PinballTable->CollisionCompOffset = Radius;
-	Position.Z = Radius;
+	// A ball placed from the DAT (Skulduggery's captive ball) rests at its own height, as in CADET.EXE
+	Position.Z = (HasGroupFlag ? Position.Z : 0.0f) + Radius;
 	GroupIndex = groupIndex;
 }
 
@@ -120,7 +131,8 @@ bool TBall::already_hit(const TEdgeSegment& edge) const
 
 int TBall::Message(MessageCode code, float value)
 {
-	if (code == MessageCode::Reset)
+	// CADET.EXE's Reset leaves a ball placed from the DAT where it is
+	if (code == MessageCode::Reset && !HasGroupFlag)
 	{
 		SpriteSetBall(-1, {0, 0}, 0.0f);
 		Position.X = 0.0;

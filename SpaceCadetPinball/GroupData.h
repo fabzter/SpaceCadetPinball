@@ -90,15 +90,20 @@ public:
 	size_t EntryCount() const { return Entries.size(); }
 	void ReserveEntries(size_t count) { Entries.reserve(count); }
 	gdrv_bitmap8* GetBitmap(int resolution) const;
+	// The group's second bitmap of a resolution, or nullptr: each ball frame of Full Tilt's bonus tables has one
+	gdrv_bitmap8* GetAltBitmap(int resolution) const;
 	zmap_header_type* GetZMap(int resolution) const;
 
 private:
 	std::vector<EntryData*> Entries;
 	gdrv_bitmap8* Bitmaps[3]{};
+	std::array<gdrv_bitmap8*, 3> AltBitmaps{};
 	zmap_header_type* ZMaps[3]{};
 	bool NeedsSort = false;
 
-	static void SplitSplicedBitmap(const gdrv_bitmap8& srcBmp, gdrv_bitmap8& bmp, zmap_header_type& zMap);
+	// srcSize is the size of the runs the spliced bitmap holds
+	static void SplitSplicedBitmap(const gdrv_bitmap8& srcBmp, size_t srcSize, gdrv_bitmap8& bmp,
+								   zmap_header_type& zMap);
 
 	void SetBitmap(gdrv_bitmap8* bmp);
 	void SetZMap(zmap_header_type* zMap);
@@ -119,10 +124,16 @@ public:
 	int field_size(int groupIndex, FieldTypes targetEntryType);
 	int record_labeled(LPCSTR targetGroupName);
 	char* field_labeled(LPCSTR lpString, FieldTypes fieldType);
+	// The group at an index, or null when the index is outside the file
+	GroupData* Group(int groupIndex) const;
 	gdrv_bitmap8* GetBitmap(int groupIndex);
+	gdrv_bitmap8* GetAltBitmap(int groupIndex);
 	zmap_header_type* GetZMap(int groupIndex);
-	void Finalize();
+	// Adds 3D Pinball's message font when asked to, then sorts the groups' entries
+	void Finalize(bool addMsgFont);
 
 private:
 	void AddMsgFont(MsgFont* font, const std::string& fontName);
+	static std::vector<uint8_t> LoadMsgFontFromExe();
+	static bool IsValidMsgFont(const std::vector<uint8_t>& data);
 };

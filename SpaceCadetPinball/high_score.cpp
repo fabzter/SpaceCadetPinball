@@ -6,59 +6,81 @@
 #include "score.h"
 #include "translations.h"
 
+#include <span>
+
 bool high_score::dlg_enter_name;
 bool high_score::ShowDialog = false;
 high_score_entry high_score::DlgData;
 std::vector<high_score_entry> high_score::ScoreQueue;
 high_score_struct high_score::highscore_table[5];
 
-int high_score::read()
+namespace
 {
-	char Buffer[20];
-
-	int checkSum = 0;
-	clear_table();
-	for (auto position = 0; position < 5; ++position)
+	void ClearTable(std::span<high_score_struct, 5> table)
 	{
-		auto& tablePtr = highscore_table[position];
-
-		snprintf(Buffer, sizeof Buffer, "%d", position);
-		strcat(Buffer, ".Name");
-		auto name = options::GetSetting(Buffer, "");
-		strncpy(tablePtr.Name, name.c_str(), sizeof tablePtr.Name);
-
-		snprintf(Buffer, sizeof Buffer, "%d", position);
-		strcat(Buffer, ".Score");
-		tablePtr.Score = options::get_int(Buffer, tablePtr.Score);
-
-		for (int i = static_cast<int>(strlen(tablePtr.Name)); --i >= 0; checkSum += tablePtr.Name[i])
+		for (auto& entry : table)
 		{
+			entry.Score = -999;
+			entry.Name[0] = 0;
 		}
-		checkSum += tablePtr.Score;
 	}
 
-	auto verification = options::get_int("Verification", 7);
-	if (checkSum != verification)
-		clear_table();
+	// The scores saved under prefix, or none if their check doesn't match
+	void ReadTable(std::span<high_score_struct, 5> table, const std::string& prefix)
+	{
+		int checkSum = 0;
+		ClearTable(table);
+		for (auto position = 0; position < 5; ++position)
+		{
+			auto& tablePtr = table[position];
+
+			auto name = options::GetSetting(prefix + std::to_string(position) + ".Name", "");
+			strncpy(tablePtr.Name, name.c_str(), sizeof tablePtr.Name);
+
+			auto scoreKey = prefix + std::to_string(position) + ".Score";
+			tablePtr.Score = options::get_int(scoreKey.c_str(), tablePtr.Score);
+
+			for (int i = static_cast<int>(strlen(tablePtr.Name)); --i >= 0; checkSum += tablePtr.Name[i])
+			{
+			}
+			checkSum += tablePtr.Score;
+		}
+
+		auto verification = options::get_int((prefix + "Verification").c_str(), 7);
+		if (checkSum != verification)
+			ClearTable(table);
+	}
+} // namespace
+
+int high_score::read()
+{
+	// Verification is written with the scores, so it tells whether this table saved its own
+	ReadTable(highscore_table, options::TableKeyPrefixToRead("Verification"));
 	return 0;
+}
+
+int high_score::BestScore(Tables table)
+{
+	// Reading adds the keys it doesn't find, which would make a table that saved nothing look as if it had
+	auto prefix = options::TableKeyPrefixToRead("Verification", table);
+	if (!options::HasSetting(prefix + "Verification"))
+		return -999;
+	std::array<high_score_struct, 5> scores{};
+	ReadTable(scores, prefix);
+	return scores[0].Score;
 }
 
 int high_score::write()
 {
-	char Buffer[20];
+	std::string prefix = options::TableKeyPrefix();
 
 	int checkSum = 0;
 	for (auto position = 0; position < 5; ++position)
 	{
 		auto& tablePtr = highscore_table[position];
 
-		snprintf(Buffer, sizeof Buffer, "%d", position);
-		strcat(Buffer, ".Name");
-		options::SetSetting(Buffer, tablePtr.Name);
-
-		snprintf(Buffer, sizeof Buffer, "%d", position);
-		strcat(Buffer, ".Score");
-		options::set_int(Buffer, tablePtr.Score);
+		options::SetSetting(prefix + std::to_string(position) + ".Name", tablePtr.Name);
+		options::set_int((prefix + std::to_string(position) + ".Score").c_str(), tablePtr.Score);
 
 		for (int i = static_cast<int>(strlen(tablePtr.Name)); --i >= 0; checkSum += tablePtr.Name[i])
 		{
@@ -66,17 +88,13 @@ int high_score::write()
 		checkSum += tablePtr.Score;
 	}
 
-	options::set_int("Verification", checkSum);
+	options::set_int((prefix + "Verification").c_str(), checkSum);
 	return 0;
 }
 
 void high_score::clear_table()
 {
-	for (auto& table : highscore_table)
-	{
-		table.Score = -999;
-		table.Name[0] = 0;
-	}
+	ClearTable(highscore_table);
 }
 
 int high_score::get_score_position(int score)
@@ -104,6 +122,22 @@ void high_score::place_new_score_into(high_score_entry data)
 		data.Entry.Name[31] = 0;
 		highscore_table[data.Position] = data.Entry;
 	}
+}
+
+bool high_score::TakeNextEntry(high_score_entry& entry)
+{
+	// As the dialog does: the newest first, each placed by its score now, and none that no longer makes the table
+	while (!ScoreQueue.empty())
+	{
+		entry = ScoreQueue.back();
+		ScoreQueue.pop_back();
+		if (entry.Position < 0 || entry.Position > 4)
+			entry.Position = get_score_position(entry.Entry.Score);
+		if (entry.Position != -1)
+			return true;
+	}
+	ShowDialog = false;
+	return false;
 }
 
 void high_score::show_high_score_dialog()
@@ -235,4 +269,10 @@ void high_score::RenderHighScoreDialog()
 			ShowDialog = true;
 		}
 	}
+}
+
+void high_score::ClearQueue()
+{
+	ScoreQueue.clear();
+	ShowDialog = false;
 }

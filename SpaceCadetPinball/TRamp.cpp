@@ -4,12 +4,27 @@
 
 #include "control.h"
 #include "loader.h"
+#include "pb.h"
 #include "TBall.h"
 #include "TEdgeSegment.h"
 #include "TLine.h"
 #include "TPinballTable.h"
 #include "TTableLayer.h"
 
+
+void TRamp::SetPlanes(const float* attribute, int length)
+{
+	// The planes are copied out of the attribute's floats, as the table lays them out
+	constexpr int planeFloats = sizeof(ramp_plane_type) / sizeof(float);
+	static_assert(std::is_trivially_copyable_v<ramp_plane_type> && sizeof(ramp_plane_type) % sizeof(float) == 0);
+	auto count = attribute ? loader::whole_number(*attribute) : 0;
+	count = std::clamp(count, 0, std::max(0, (length - 1) / planeFloats));
+	Planes.resize(count);
+	if (count > 0)
+		std::memcpy(Planes.data(), attribute + 1, Planes.size() * sizeof(ramp_plane_type));
+	RampPlaneCount = count;
+	RampPlane = count > 0 ? Planes.data() : nullptr;
+}
 
 TRamp::TRamp(TPinballTable* table, int groupIndex) : TCollisionComponent(table, groupIndex, false)
 {
@@ -24,49 +39,53 @@ TRamp::TRamp(TPinballTable* table, int groupIndex) : TCollisionComponent(table, 
 	BallFieldMult = loader::query_float_attribute(groupIndex, 0, 701, 0.2f);
 	BallZOffsetFlag = static_cast<int>(loader::query_float_attribute(groupIndex, 0, 1305, 0));
 
-	auto floatArr3Plane = loader::query_float_attribute(groupIndex, 0, 1300);
-	RampPlaneCount = static_cast<int>(floor(*floatArr3Plane));
-	RampPlane = reinterpret_cast<ramp_plane_type*>(floatArr3Plane + 1);
+	// The planes' count, then the planes; a damaged table's count can't run past the attribute
+	int planesLength;
+	auto floatArr3Plane = loader::query_float_array(groupIndex, 0, 1300, &planesLength);
+	SetPlanes(floatArr3Plane, planesLength);
 
-	auto wall0Arr = loader::query_float_attribute(groupIndex, 0, 1303);
-	auto wall0CollisionGroup = 1 << static_cast<int>(floor(wall0Arr[0]));
-	auto wall0Pts = reinterpret_cast<wall_point_type*>(wall0Arr + 2);
-	Line1 = new TLine(this, &ActiveFlag, wall0CollisionGroup, wall0Pts->Pt1, wall0Pts->Pt0);
-	Line1->WallValue = nullptr;
-	Line1->place_in_grid(&AABB);
-	EdgeList.push_back(Line1);
+	// Full Tilt's bonus tables leave out some of the three walls, which CADET.EXE then doesn't build; their members
+	// keep the defaults from TRamp.h
+	int wall1Enabled = 0;
+	int wall2Enabled = 0;
 
-	auto wall1Arr = loader::query_float_attribute(groupIndex, 0, 1301);
-	Wall1CollisionGroup = 1 << static_cast<int>(floor(wall1Arr[0]));
-	auto wall1Enabled = static_cast<int>(floor(wall1Arr[1]));
-	Wall1BallOffset = wall1Arr[7];
-	maths::find_closest_edge(
-		RampPlane,
-		RampPlaneCount,
-		reinterpret_cast<wall_point_type*>(wall1Arr + 3),
-		wall1End,
-		wall1Start);
+	if (auto wall0Arr = loader::query_float_attribute(groupIndex, 0, 1303))
+	{
+		auto wall0CollisionGroup = loader::collision_group_bit(wall0Arr[0]);
+		auto wall0Pts = reinterpret_cast<wall_point_type*>(wall0Arr + 2);
+		Line1 = new TLine(this, &ActiveFlag, wall0CollisionGroup, wall0Pts->Pt1, wall0Pts->Pt0);
+		Line1->WallValue = nullptr;
+		Line1->place_in_grid(&AABB);
+		EdgeList.push_back(Line1);
+	}
 
-	Line2 = new TLine(this, &ActiveFlag, CollisionGroup, wall1Start, wall1End);
-	Line2->WallValue = nullptr;
-	Line2->place_in_grid(&AABB);
-	EdgeList.push_back(Line2);
+	if (auto wall1Arr = loader::query_float_attribute(groupIndex, 0, 1301))
+	{
+		Wall1CollisionGroup = loader::collision_group_bit(wall1Arr[0]);
+		wall1Enabled = loader::whole_number(wall1Arr[1]);
+		Wall1BallOffset = wall1Arr[7];
+		maths::find_closest_edge(RampPlane, RampPlaneCount, reinterpret_cast<wall_point_type*>(wall1Arr + 3), wall1End,
+								 wall1Start);
 
-	auto wall2Arr = loader::query_float_attribute(groupIndex, 0, 1302);
-	Wall2CollisionGroup = 1 << static_cast<int>(floor(wall2Arr[0]));
-	auto wall2Enabled = static_cast<int>(floor(wall2Arr[1]));
-	Wall2BallOffset = wall2Arr[7];
-	maths::find_closest_edge(
-		RampPlane,
-		RampPlaneCount,
-		reinterpret_cast<wall_point_type*>(wall2Arr + 3),
-		wall2End,
-		wall2Start);
+		Line2 = new TLine(this, &ActiveFlag, CollisionGroup, wall1Start, wall1End);
+		Line2->WallValue = nullptr;
+		Line2->place_in_grid(&AABB);
+		EdgeList.push_back(Line2);
+	}
 
-	Line3 = new TLine(this, &ActiveFlag, CollisionGroup, wall2Start, wall2End);
-	Line3->WallValue = nullptr;
-	Line3->place_in_grid(&AABB);
-	EdgeList.push_back(Line3);
+	if (auto wall2Arr = loader::query_float_attribute(groupIndex, 0, 1302))
+	{
+		Wall2CollisionGroup = loader::collision_group_bit(wall2Arr[0]);
+		wall2Enabled = loader::whole_number(wall2Arr[1]);
+		Wall2BallOffset = wall2Arr[7];
+		maths::find_closest_edge(RampPlane, RampPlaneCount, reinterpret_cast<wall_point_type*>(wall2Arr + 3), wall2End,
+								 wall2Start);
+
+		Line3 = new TLine(this, &ActiveFlag, CollisionGroup, wall2Start, wall2End);
+		Line3->WallValue = nullptr;
+		Line3->place_in_grid(&AABB);
+		EdgeList.push_back(Line3);
+	}
 
 
 	auto xMin = 1000000000.0f;
@@ -145,6 +164,15 @@ void TRamp::Collision(TBall* ball, vector2* nextPosition, vector2* direction, fl
 		ball->RampFieldForce.Y = plane->FieldForce.Y;
 		ball->Position.Z = ball->Position.X * ball->CollisionOffset.X + ball->Position.Y * ball->CollisionOffset.Y +
 			ball->Radius + ball->CollisionOffset.Z;
+		// CADET.EXE (0x4177d0), the bonus tables only: a change of layer stops the ball for the rest of the frame and
+		// tells the rules
+		if (pb::BonusTable() && ball->CollisionMask != CollisionGroup)
+		{
+			ball->CollisionDisabledFlag = true;
+			ball->CollisionMask = CollisionGroup;
+			control::handler(MessageCode::ControlRampLayerChanged, this);
+			return;
+		}
 		ball->CollisionMask = CollisionGroup;
 		return;
 	}
@@ -171,6 +199,14 @@ void TRamp::Collision(TBall* ball, vector2* nextPosition, vector2* direction, fl
 			ball->CollisionMask = Wall2CollisionGroup;
 			if (BallZOffsetFlag)
 				ball->Position.Z = ball->Radius + Wall2BallOffset;
+		}
+		// CADET.EXE, the bonus tables only: crossing either wall stops the ball for the rest of the frame and tells
+		// the rules (0x55 for wall 1301, 0x56 for 1302)
+		if (pb::BonusTable())
+		{
+			ball->CollisionDisabledFlag = true;
+			control::handler(
+				edge == Line2 ? MessageCode::ControlRampExitToLayer1 : MessageCode::ControlRampExitToLayer2, this);
 		}
 	}
 }

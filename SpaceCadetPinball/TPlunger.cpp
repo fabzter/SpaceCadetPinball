@@ -8,11 +8,11 @@
 #include "pb.h"
 #include "render.h"
 #include "TBall.h"
-#include "TLine.h"
 #include "timer.h"
 #include "TPinballTable.h"
 
-TPlunger::TPlunger(TPinballTable* table, int groupIndex) : TCollisionComponent(table, groupIndex, true)
+TPlunger::TPlunger(TPinballTable* table, int groupIndex, bool launcher) :
+	TCollisionComponent(table, groupIndex, true), Launcher(launcher)
 {
 	visualStruct visual{};
 
@@ -25,17 +25,19 @@ TPlunger::TPlunger(TPinballTable* table, int groupIndex) : TCollisionComponent(t
 	HardHitSoundId = visual.Kicker.HardHitSoundId;
 	Threshold = 1000000000.0;
 
-    // FT:MaxPullback = 50; 3DPB: MaxPullback = 100, PullbackIncrement is floored.
-    if (pb::FullTiltMode)
-    {
-        MaxPullback = 50;
-        PullbackIncrement = MaxPullback / (ListBitmap->size() * 8.0f);
-    }
-    else
-    {
-        MaxPullback = 100;
-        PullbackIncrement = std::floor(MaxPullback / (ListBitmap->size() * 8.0f));
-    }
+	// FT:MaxPullback = 50; 3DPB: MaxPullback = 100, PullbackIncrement is floored.
+	// CADET.EXE reads attribute 402 for it, which only Skulduggery's launcher has (100); a launcher pulls nothing.
+	if (pb::FullTiltMode)
+	{
+		auto maxPullback = loader::query_float_attribute(groupIndex, 0, 402);
+		MaxPullback = maxPullback ? *maxPullback : 50.0f;
+		PullbackIncrement = Launcher ? 0.0f : MaxPullback / (ListBitmap->size() * 8.0f);
+	}
+	else
+	{
+		MaxPullback = 100;
+		PullbackIncrement = std::floor(MaxPullback / (ListBitmap->size() * 8.0f));
+	}
 
 	Elasticity = 0.5f;
 	Smoothness = 0.5f;
@@ -47,7 +49,7 @@ TPlunger::TPlunger(TPinballTable* table, int groupIndex) : TCollisionComponent(t
 
 void TPlunger::Collision(TBall* ball, vector2* nextPosition, vector2* direction, float distance, TEdgeSegment* edge)
 {
-	if (PinballTable->TiltLockFlag || SomeCounter > 0) 
+	if (SomeCounter > 0 || (pb::FullTiltMode && PinballTable->TiltLockFlag))
 	{
 		auto boost = RandFloat() * MaxPullback * 0.1f + MaxPullback;
 		maths::basic_collision(ball, nextPosition, direction, Elasticity, Smoothness, 0, boost);
@@ -57,22 +59,43 @@ void TPlunger::Collision(TBall* ball, vector2* nextPosition, vector2* direction,
 	}
 	else 
 	{
+		// 3D Pinball sends Launch Ball when a ball hits the plunger on a tilted table, then pushes with that
+		if (PinballTable->TiltLockFlag)
+			Message(MessageCode::PlungerLaunchBall, 0.0f);
 		auto boost = RandFloat() * Boost * 0.1f + Boost;
 		maths::basic_collision(ball, nextPosition, direction, Elasticity, Smoothness, Threshold, boost);
+		ReleaseTouched = true;
+		if (ReleaseWaitsForTouch)
+		{
+			// The push kept past PullbackDelay ends with the touch it waited for
+			timer::kill(ReleaseTimerId);
+			ReleasedTimer(ReleaseTimerId, this);
+		}
 	}
+}
+
+bool TPlunger::CanStartPull() const
+{
+	if (pb::FullTiltMode)
+		return !PullbackStartedFlag && PinballTable->MultiballCount > 0 && !PinballTable->TiltLockFlag;
+
+	// 3D Pinball refuses a new pull only while the pullback timer runs
+	return !PullbackTimer_;
 }
 
 int TPlunger::Message(MessageCode code, float value)
 {
+	if (pb::BonusTable())
+		KeepMessageFieldPerPlayer(code, value);
 	switch (code)
 	{
 	case MessageCode::PlungerInputPressed:
-		if (!PullbackStartedFlag && (!pb::FullTiltMode || PinballTable->MultiballCount > 0 && !PinballTable->
-			TiltLockFlag))
+		if (CanStartPull() && Launcher)
+			Message(MessageCode::PlungerLaunchBall, 0.0f); // CADET.EXE's launcher launches as Launch Ball does
+		else if (CanStartPull())
 		{
+			CancelReleaseWait();
 			PullbackStartedFlag = true;
-			// A rapid second pull must not be cleared by the previous release.
-			timer::kill(ReleasedTimer);
 			Boost = 0.0;
 			Threshold = 1000000000.0;
 			loader::play_sound(HardHitSoundId, this, "TPlunger1");
@@ -81,14 +104,15 @@ int TPlunger::Message(MessageCode code, float value)
 		break;
 	case MessageCode::PlungerFeedBall:
 		{
-			if (PinballTable->BallCountInRect(PinballTable->PlungerPosition, PinballTable->CollisionCompOffset * 1.2f))
+			// AddBall fails only when all 20 ball slots are in use, which only cheats can cause; try again later
+			if (auto position = PinballTable->PlungerPosition;
+				PinballTable->BallCountInRect(position, PinballTable->CollisionCompOffset * 1.2f) ||
+				!PinballTable->AddBall(position))
 			{
 				timer::set(1.0f, this, BallFeedTimer);
 			}
 			else
 			{
-				auto ball = PinballTable->AddBall(PinballTable->PlungerPosition);
-				assertm(ball, "Failure to create ball in plunger");
 				PinballTable->MultiballCount++;
 				PinballTable->BallInDrainFlag = 0;
 				pb::tilt_no_more();
@@ -100,6 +124,15 @@ int TPlunger::Message(MessageCode code, float value)
 		loader::play_sound(SoundIndexP1, this, "TPlunger2");
 		break;
 	case MessageCode::PlungerLaunchBall:
+		if (!pb::FullTiltMode)
+		{
+			// 3D Pinball's Launch Ball command keeps the full push for 0.2 s, not the 25 ms of a released pull
+			Threshold = 0.0f;
+			Boost = MaxPullback;
+			CancelReleaseWait();
+			timer::set(0.2f, this, ReleasedTimer);
+			break;
+		}
 		PullbackStartedFlag = true;
 		Boost = MaxPullback;
 		Message(MessageCode::PlungerInputReleased, 0.0f);
@@ -112,48 +145,45 @@ int TPlunger::Message(MessageCode code, float value)
 		PullbackTimer(0, this);
 		break;
 	case MessageCode::PlayerChanged:
-		PullbackStartedFlag = false;
-		Boost = 0.0f;
-		Threshold = 1000000000.0f;
-		SomeCounter = 0;
-		timer::kill(BallFeedTimer);
-		timer::kill(PullbackTimer);
-		timer::kill(ReleasedTimer);
+		HandlePlayerChanged();
 		break;
 	case MessageCode::SetTiltLock:
+		HandleTiltLock();
+		break;
+	case MessageCode::Reset:
+		if (pb::FullTiltMode)
+		{
+			Stop();
+			SpriteSet(0);
+			break;
+		}
+		// 3D Pinball's Reset stops the ball feed, then lets the plunger go as a release does, without the sound
 		SomeCounter = 0;
 		timer::kill(BallFeedTimer);
-		break;
+		[[fallthrough]];
 	case MessageCode::PlungerInputReleased:
 	case MessageCode::Resume:
 	case MessageCode::LooseFocus:
-		if (PullbackStartedFlag && !SomeCounter)
+		// 3D Pinball releases even without a pull and sounds only when the plunger input is released
+		if ((!pb::FullTiltMode || PullbackStartedFlag) && !SomeCounter)
 		{
 			PullbackStartedFlag = false;
 			Threshold = 0.0;
 			if (PullbackTimer_)
 				timer::kill(PullbackTimer_);
 			PullbackTimer_ = 0;
-			loader::play_sound(SoundIndexP2, this, "TPlunger3");
+			if (pb::FullTiltMode || code == MessageCode::PlungerInputReleased)
+				loader::play_sound(SoundIndexP2, this, "TPlunger3");
 			SpriteSet(0);
-			timer::set(PullbackDelay, this, ReleasedTimer);
-			StrikeRestingBall();
+			// The push lasts ReleaseDelay. In 3D Pinball, Pinball.exe's short physics steps let a ball resting on the
+			// plunger touch it within PullbackDelay; with ours it can bounce for longer, so ReleasedTimer keeps the
+			// push until it touches
+			CancelReleaseWait();
+			ReleasePushPending = true;
+			ReleaseTouched = false;
+			ReleaseTimerId = timer::set(ReleaseDelay(), this, ReleasedTimer);
 		}
 		break;
-	case MessageCode::Reset:
-	{
-		PullbackStartedFlag = false;
-		Boost = 0.0f;
-		Threshold = 1000000000.0f;
-		SomeCounter = 0;
-
-		timer::kill(BallFeedTimer);
-		timer::kill(PullbackTimer);
-		timer::kill(ReleasedTimer);
-
-		SpriteSet(0);
-		break;
-	}
 	default:
 		break;
 	}
@@ -162,42 +192,57 @@ int TPlunger::Message(MessageCode code, float value)
 	return 0;
 }
 
+void TPlunger::HandlePlayerChanged()
+{
+	// Pinball.exe's plunger takes no PlayerChanged, so a pull held as the player changes stays for the next player's
+	// ball; CADET.EXE's lets go of it (0x3fe)
+	if (pb::FullTiltMode)
+		Stop();
+}
+
+void TPlunger::HandleTiltLock()
+{
+	// Pinball.exe's plunger takes no SetTiltLock either: a tilt leaves 3D Pinball's ball feed running, and the ball
+	// it serves ends the tilt; CADET.EXE's stops the feed (0x3f3)
+	if (pb::FullTiltMode)
+	{
+		SomeCounter = 0;
+		timer::kill(BallFeedTimer);
+	}
+}
+
+void TPlunger::Stop()
+{
+	PullbackStartedFlag = false;
+	Boost = 0.0f;
+	Threshold = 1000000000.0f;
+	SomeCounter = 0;
+
+	timer::kill(BallFeedTimer);
+	timer::kill(PullbackTimer);
+	PullbackTimer_ = 0;
+	timer::kill(ReleasedTimer);
+	CancelReleaseWait();
+}
+
+float TPlunger::ReleaseDelay() const
+{
+	return pb::FullTiltMode ? FullTiltReleaseDelay : PullbackDelay;
+}
+
+void TPlunger::CancelReleaseWait()
+{
+	// Only a push kept past ReleaseDelay has a timer of its own to stop; the originals' timers stay as they were
+	if (ReleaseWaitsForTouch)
+		timer::kill(ReleaseTimerId);
+	ReleasePushPending = false;
+	ReleaseWaitsForTouch = false;
+}
+
 void TPlunger::BallFeedTimer(int timerId, void* caller)
 {
 	auto plunger = static_cast<TPlunger*>(caller);
 	plunger->Message(MessageCode::PlungerFeedBall, 0.0);
-}
-
-void TPlunger::StrikeRestingBall()
-{
-	// A resting ball still rebounds by about 0.003 table units. Its next
-	// collision can be later than the 25 ms release window (upstream #210).
-	// Resolve contact at release within a small numerical skin, using the
-	// actual, radius-offset plunger wall rather than the ball-feed position.
-	constexpr float contactSkin = 0.005f;
-	for (auto ball : PinballTable->BallList)
-	{
-		if (!ball->ActiveFlag || ball->HasGroupFlag || ball->CollisionComp || ball->Speed >= 0.8f)
-			continue;
-		for (auto edge : EdgeList)
-		{
-			auto line = dynamic_cast<TLine*>(edge);
-			if (!line || !*edge->ActiveFlagPtr || !(edge->CollisionGroup & ball->CollisionMask))
-				continue;
-			ray_type ray{};
-			ray.Origin = ball->Position;
-			ray.Direction = {-line->Line.PerpendicularC.X, -line->Line.PerpendicularC.Y};
-			ray.MinDistance = 0.002f; // Same penetration tolerance as pb::timed_frame.
-			ray.MaxDistance = contactSkin;
-			auto distance = line->FindCollisionDistance(ray);
-			if (distance >= 1e9f)
-				continue;
-			line->EdgeCollision(ball, distance);
-			// One release supplies one impulse, even for a very weak shot.
-			ReleasedTimer(0, this);
-			return;
-		}
-	}
 }
 
 void TPlunger::PullbackTimer(int timerId, void* caller)
@@ -221,6 +266,9 @@ void TPlunger::PullbackTimer(int timerId, void* caller)
 		plunger->Boost = plunger->MaxPullback;
 	}
 
+	// A launcher has no sprites to show the pull with
+	if (!plunger->ListBitmap)
+		return;
 	int index = static_cast<int>(floor(
 		static_cast<float>(plunger->ListBitmap->size() - 1) *
 		(plunger->Boost / plunger->MaxPullback)));
@@ -230,6 +278,19 @@ void TPlunger::PullbackTimer(int timerId, void* caller)
 void TPlunger::ReleasedTimer(int timerId, void* caller)
 {
 	auto plunger = static_cast<TPlunger*>(caller);
+	// A newer release's push is under way: an older release's timer leaves it alone
+	if ((plunger->ReleasePushPending || plunger->ReleaseWaitsForTouch) && timerId != plunger->ReleaseTimerId)
+		return;
+	// Full Tilt's 0.2 s already outlasts ReleasePushLimit, so only 3D Pinball's PullbackDelay waits for the touch
+	if (plunger->ReleasePushPending && !plunger->ReleaseTouched && plunger->ReleaseDelay() < ReleasePushLimit)
+	{
+		plunger->ReleasePushPending = false;
+		plunger->ReleaseWaitsForTouch = true;
+		plunger->ReleaseTimerId = timer::set(ReleasePushLimit - plunger->ReleaseDelay(), plunger, ReleasedTimer);
+		return;
+	}
+	plunger->ReleasePushPending = false;
+	plunger->ReleaseWaitsForTouch = false;
 	plunger->Threshold = 1000000000.0;
 	plunger->Boost = 0.0;
 }

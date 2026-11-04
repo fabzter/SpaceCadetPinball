@@ -5,6 +5,7 @@
 #include "control.h"
 #include "gdrv.h"
 #include "loader.h"
+#include "pb.h"
 #include "render.h"
 #include "TBall.h"
 #include "TEdgeSegment.h"
@@ -26,6 +27,8 @@ TRollover::TRollover(TPinballTable* table, int groupIndex) : TCollisionComponent
 
 int TRollover::Message(MessageCode code, float value)
 {
+	if (pb::BonusTable())
+		KeepMessageFieldPerPlayer(code, value);
 	if (code == MessageCode::Reset)
 	{
 		ActiveFlag = 1;
@@ -65,10 +68,11 @@ void TRollover::build_walls(int groupIndex)
 	visualStruct visual{};
 
 	loader::query_visual(groupIndex, 0, &visual);
-	float* arr1 = loader::query_float_attribute(groupIndex, 0, 600);
-	TEdgeSegment::install_wall(arr1, this, &ActiveFlag, visual.CollisionGroup, 0.0, 600);
-	float* arr2 = loader::query_float_attribute(groupIndex, 0, 603);
-	TEdgeSegment::install_wall(arr2, this, &RolloverFlag, visual.CollisionGroup, 0.0, 603);
+	int length;
+	const float* arr1 = loader::query_float_array(groupIndex, 0, 600, &length);
+	TEdgeSegment::install_wall(arr1, length, this, &ActiveFlag, visual.CollisionGroup, 0.0, 600);
+	const float* arr2 = loader::query_float_array(groupIndex, 0, 603, &length);
+	TEdgeSegment::install_wall(arr2, length, this, &RolloverFlag, visual.CollisionGroup, 0.0, 603);
 }
 
 void TRollover::TimerExpired(int timerId, void* caller)

@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "TBumper.h"
 
+#include "Rumble.h"
+
 
 #include "control.h"
 #include "loader.h"
@@ -14,7 +16,7 @@ TBumper::TBumper(TPinballTable* table, int groupIndex) : TCollisionComponent(tab
 
 	BmpIndex = 0;
 	Timer = 0;
-	TimerTime = *loader::query_float_attribute(groupIndex, 0, 407);
+	TimerTime = *loader::required_float_attribute(groupIndex, 0, 407);
 	loader::query_visual(groupIndex, 0, &visual);
 	SoundIndex4 = visual.SoundIndex4;
 	SoundIndex3 = visual.SoundIndex3;
@@ -103,6 +105,7 @@ void TBumper::Collision(TBall* ball, vector2* nextPosition, vector2* direction, 
 	if (DefaultCollision(ball, nextPosition, direction))
 	{
 		Fire();
+		Rumble::Bumper();
 		control::handler(MessageCode::ControlCollision, this);
 	}
 }

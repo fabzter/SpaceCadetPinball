@@ -69,16 +69,19 @@ int timer::kill(void(* callback)(int, void*))
 	{
 		if (current->Callback == callback)
 		{
+			// Keep the next timer before this one joins the free list, as CADET.EXE does (0x41f960). Like it, the
+			// index still steps after a removal, so a match right after another is skipped.
+			auto next = current->NextTimer;
 			count++;
 			if (prev)
-				prev->NextTimer = current->NextTimer;
+				prev->NextTimer = next;
 			else
-				ActiveList = current->NextTimer;
+				ActiveList = next;
 			current->NextTimer = FreeList;
 			FreeList = current;
 			if (--Count == index)
 				break;
-			current = current->NextTimer;
+			current = next;
 		}
 		else
 		{
@@ -130,6 +133,17 @@ int timer::set(float time, void* caller, void (* callback)(int, void*))
 	if (SetCount <= 0)
 		SetCount = 1;
 	return timer->TimerId;
+}
+
+int timer::time_left(int timerId)
+{
+	auto current = ActiveList;
+	for (int index = 0; index < Count; ++index, current = current->NextTimer)
+	{
+		if (current->TimerId == timerId)
+			return std::max(current->TargetTime - pb::time_ticks, 0);
+	}
+	return -1;
 }
 
 int timer::check()

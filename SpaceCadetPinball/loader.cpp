@@ -43,7 +43,7 @@ int loader::sound_count = 1;
 int loader::loader_sound_count;
 DatFile* loader::loader_table;
 DatFile* loader::sound_record_table;
-soundListStruct loader::sound_list[65];
+soundListStruct loader::sound_list[SoundListSize];
 
 int loader::error(int errorCode, int captionCode)
 {
@@ -73,7 +73,10 @@ void loader::default_vsi(visualStruct* visual)
 	visual->Kicker.HardHitSoundId = 0;
 	visual->Smoothness = 0.94999999f;
 	visual->Elasticity = 0.60000002f;
+	// No outline: a group without one, or a damaged one, reads zeros where the components expect its first points
+	static std::array<float, 8> noOutline{};
 	visual->FloatArrCount = 0;
+	visual->FloatArr = noOutline.data();
 	visual->SoftHitSoundId = 0;
 	visual->Bitmap = { nullptr, nullptr };
 	visual->SoundIndex3 = 0;
@@ -90,7 +93,7 @@ void loader::loadfrom(DatFile* datFile)
 		auto value = reinterpret_cast<int16_t*>(datFile->field(groupIndex, FieldTypes::ShortValue));
 		if (value && *value == 202)
 		{
-			if (sound_count < 65)
+			if (sound_count < SoundListSize)
 			{
 				sound_list[sound_count] = {nullptr, groupIndex, 0, 0};
 				sound_count++;
@@ -157,17 +160,20 @@ int loader::get_sound_id(int groupIndex)
 				{
 					if (i == 1)
 						std::transform(fileName.begin(), fileName.end(), fileName.begin(),
-						               [](unsigned char c) { return std::toupper(c); });
+						               [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
 
 					filePath = pb::make_path_name(fileName);
 					auto file = fopenu(filePath.c_str(), "rb");
 					if (file)
 					{
-						fread(&wavHeader, 1, sizeof wavHeader, file);
+						auto headerRead = fread(&wavHeader, 1, sizeof wavHeader, file) == sizeof wavHeader;
 						fclose(file);
-						auto sampleCount = wavHeader.data_size / (wavHeader.channels * (wavHeader.bits_per_sample /
-							8.0));
-						duration = static_cast<float>(sampleCount / wavHeader.sample_rate);
+						if (headerRead)
+						{
+							auto sampleCount = wavHeader.data_size / (wavHeader.channels * (wavHeader.bits_per_sample /
+								8.0));
+							duration = static_cast<float>(sampleCount / wavHeader.sample_rate);
+						}
 						break;
 					}
 				}
@@ -192,7 +198,7 @@ short loader::query_visual_states(int groupIndex)
 {
 	short result;
 	if (groupIndex < 0)
-		return error(0, 17);
+		return static_cast<short>(error(0, 17));
 	auto shortArr = reinterpret_cast<int16_t*>(loader_table->field(groupIndex, FieldTypes::ShortArray));
 	if (shortArr && *shortArr == 100)
 		result = shortArr[1];
@@ -214,6 +220,7 @@ char* loader::query_name(int groupIndex)
 
 int16_t* loader::query_iattribute(int groupIndex, int firstValue, int* arraySize)
 {
+	using enum FieldTypes;
 	if (groupIndex < 0)
 	{
 		error(0, 22);
@@ -228,7 +235,11 @@ int16_t* loader::query_iattribute(int groupIndex, int firstValue, int* arraySize
 			break;
 		if (*shortArr == firstValue)
 		{
-			*arraySize = loader_table->field_size(groupIndex, FieldTypes::ShortArray) / 2 - 1;
+			// The count comes from the group's first array, as Pinball.exe takes it, but never runs past the array
+			// found, which in a damaged table can be shorter
+			auto firstCount = loader_table->field_size(groupIndex, ShortArray) / 2 - 1;
+			auto foundCount = loader_table->field_size_nth(groupIndex, ShortArray, skipIndex) / 2 - 1;
+			*arraySize = std::min(firstCount, foundCount);
 			return shortArr + 1;
 		}
 	}
@@ -240,6 +251,13 @@ int16_t* loader::query_iattribute(int groupIndex, int firstValue, int* arraySize
 
 float* loader::query_float_attribute(int groupIndex, int groupIndexOffset, int firstValue)
 {
+	int length;
+	return query_float_array(groupIndex, groupIndexOffset, firstValue, &length);
+}
+
+float* loader::query_float_array(int groupIndex, int groupIndexOffset, int firstValue, int* length)
+{
+	*length = 0;
 	if (groupIndex < 0)
 	{
 		error(0, 22);
@@ -260,11 +278,36 @@ float* loader::query_float_attribute(int groupIndex, int groupIndexOffset, int f
 		if (!floatArr)
 			break;
 		if (static_cast<int16_t>(floor(*floatArr)) == firstValue)
+		{
+			*length = loader_table->field_size_nth(stateId, FieldTypes::FloatArray, skipIndex) / 4 - 1;
 			return floatArr + 1;
+		}
 	}
 
-	error(13, 22);
+	// Full Tilt's loader (CADET.EXE) returns no attribute without an error, and its components check for it
+	if (!pb::FullTiltMode)
+		error(13, 22);
 	return nullptr;
+}
+
+int loader::collision_group_bit(float value)
+{
+	auto number = floor(value);
+	return number >= 0 && number < 32 ? static_cast<int>(1u << static_cast<unsigned>(number)) : 0;
+}
+
+int loader::whole_number(float value)
+{
+	auto number = floor(value);
+	return number >= -2147483648.0f && number < 2147483648.0f ? static_cast<int>(number) : 0;
+}
+
+const float* loader::required_float_attribute(int groupIndex, int groupIndexOffset, int firstValue)
+{
+	// Enough for the longest attribute a component reads at fixed places, a vector or a few values
+	static constexpr std::array<float, 8> zeros{};
+	auto attribute = query_float_attribute(groupIndex, groupIndexOffset, firstValue);
+	return attribute ? attribute : zeros.data();
 }
 
 float loader::query_float_attribute(int groupIndex, int groupIndexOffset, int firstValue, float defVal)
@@ -348,7 +391,7 @@ int loader::state_id(int groupIndex, int groupIndexOffset)
 	auto shortArr = reinterpret_cast<int16_t*>(loader_table->field(groupIndex, FieldTypes::ShortValue));
 	if (!shortArr)
 		return error(1, 24);
-	if (*shortArr != 200)
+	if (*shortArr != FirstStateGroup)
 		return error(5, 24);
 	if (groupIndexOffset > visualState)
 		return error(12, 24);
@@ -359,7 +402,7 @@ int loader::state_id(int groupIndex, int groupIndexOffset)
 	shortArr = reinterpret_cast<int16_t*>(loader_table->field(groupIndex, FieldTypes::ShortValue));
 	if (!shortArr)
 		return error(1, 24);
-	if (*shortArr != 201)
+	if (*shortArr != NextStateGroup)
 		return error(6, 24);
 	return groupIndex;
 }
@@ -399,6 +442,16 @@ int loader::kicker(int groupIndex, visualKickerStruct* kicker)
 			floatArr += 3;
 			index += 4;
 			break;
+		case 410:
+			// Full Tilt's bonus tables give the throw as two points, x y z and an unused fourth float each.
+			// CADET.EXE throws from the first towards the second and normalizes x and y; it does that for 404 too,
+			// where Pinball.exe and this code keep the direction as given.
+			kicker->ThrowBallDirection = {floatArr[4] - floatArr[0], floatArr[5] - floatArr[1],
+										  floatArr[6] - floatArr[2]};
+			maths::normalize_2d(kicker->ThrowBallDirection);
+			floatArr += 8;
+			index += 9;
+			break;
 		case 405:
 			kicker->ThrowBallAngleMult = *floatArr;
 			break;
@@ -408,7 +461,7 @@ int loader::kicker(int groupIndex, visualKickerStruct* kicker)
 		default:
 			return error(10, 20);
 		}
-		if (floorVal != 404)
+		if (floorVal != 404 && floorVal != 410)
 		{
 			floatArr++;
 			index += 2;
@@ -417,6 +470,12 @@ int loader::kicker(int groupIndex, visualKickerStruct* kicker)
 	return 0;
 }
 
+
+gdrv_bitmap8* loader::query_alt_bitmap(int groupIndex, int groupIndexOffset)
+{
+	auto stateId = groupIndex < 0 ? -1 : state_id(groupIndex, groupIndexOffset);
+	return stateId < 0 ? nullptr : loader_table->GetAltBitmap(stateId);
+}
 
 int loader::query_visual(int groupIndex, int groupIndexOffset, visualStruct* visual)
 {
@@ -458,7 +517,8 @@ int loader::query_visual(int groupIndex, int groupIndexOffset, visualStruct* vis
 				visual->Kicker.HardHitSoundId = get_sound_id(shortArr[1]);
 				break;
 			case 602:
-				visual->CollisionGroup |= 1 << shortArr[1];
+				visual->CollisionGroup = static_cast<int>(static_cast<unsigned>(visual->CollisionGroup) |
+														  static_cast<unsigned>(collision_group_bit(shortArr[1])));
 				break;
 			case 1100:
 				visual->SoundIndex4 = get_sound_id(shortArr[1]);
@@ -498,7 +558,10 @@ int loader::query_visual(int groupIndex, int groupIndexOffset, visualStruct* vis
 		break;
 	default:
 		if (floatVal != visual->FloatArrCount)
+		{
+			visual->FloatArrCount = 0;
 			return error(8, 18);
+		}
 		break;
 	}
 

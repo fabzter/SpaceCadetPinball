@@ -10,6 +10,7 @@ class TPlunger;
 class TDrain;
 class TDemo;
 class TLightGroup;
+class TTableLayer;
 
 struct score_struct_super
 {
@@ -17,6 +18,7 @@ struct score_struct_super
 	int Score;
 	int ScoreE9Part;
 	int JackpotScore;
+	int SecondJackpotScore;
 	int BallCount;
 	int ExtraBalls;
 	int BallLockedCounter;
@@ -44,8 +46,9 @@ public:
 	static void replay_timer_callback(int timerId, void* caller);
 	static void tilt_timeout(int timerId, void* caller);
 
-	TFlipper* FlipperL;
-	TFlipper* FlipperR;
+	// Space Cadet has one flipper on each side; Full Tilt's engine (CADET.EXE) keeps a list for each
+	std::vector<TFlipper*> FlippersL;
+	std::vector<TFlipper*> FlippersR;
 	scoreStruct* CurScoreStruct;
 	scoreStruct* ScoreBallcount;
 	scoreStruct* ScorePlayerNumber1;
@@ -73,11 +76,13 @@ public:
 	std::vector<TBall*> BallList;
 	std::vector<TFlipper*> FlipperList;
 	TLightGroup* LightGroup;
+	TTableLayer* TableLayer;
 	float GravityDirVectMult{};
 	float GravityAngleX{};
 	float GravityAnglY{};
 	float CollisionCompOffset{};
 	vector2 PlungerPosition{};
+	// An index into score_multipliers; on the bonus tables the factor itself, as CADET.EXE keeps it
 	int ScoreMultiplier{};
 	int ScoreAdded{};
 	int ReflexShotScore{};
@@ -85,6 +90,9 @@ public:
 	bool BonusScoreFlag{};
 	int JackpotScore{};
 	bool JackpotScoreFlag{};
+	// CADET.EXE's second jackpot (table fields 0x17a and 0x17e), which only the bonus tables' rules use
+	int SecondJackpotScore{};
+	bool SecondJackpotScoreFlag{};
 	int UnknownP71{};
 	int BallCount{};
 	int MaxBallCount;
@@ -98,7 +106,13 @@ public:
 	int UnknownP81{};
 	int UnknownP82{};
 	int TiltLockFlag;
+	// The factor of each ScoreMultiplier
+	static int score_multipliers[5];
+	// ScoreMultiplier's value for a factor of 1
+	static int NoScoreMultiplier();
 
 private:
-	static int score_multipliers[5];
+
+	void AddBlocker(int groupIndex);
+	static void LogNotBuilt(int objectType, int groupIndex);
 };

@@ -77,23 +77,6 @@ const char* translations::GetTranslation(Msg id)
 	return text;
 }
 
-void translations::GetGlyphRange(ImVector<ImWchar>* ranges)
-{
-	ImFontGlyphRangesBuilder builder;
-
-	for (int i = 0; i < (int)Msg::Max; i++)
-	{
-		const char* translation = GetTranslation((Msg)i);
-		if (translation)
-		{
-			builder.AddText(translation);
-		}
-	}
-
-	builder.AddRanges(ImGui::GetIO().Fonts->GetGlyphRangesDefault());
-	builder.BuildRanges(ranges);
-}
-
 const TextArray translations::Translations =
 {
 	{
@@ -1172,7 +1155,7 @@ const TextArray translations::Translations =
 	{
 		Msg::STRING141,
 		{
-			{ Lang::Arabic, "‏‏هل تريد مسح أفضل النتائج؟" },
+			{ Lang::Arabic, "\u200F\u200Fهل تريد مسح أفضل النتائج؟" },
 			{ Lang::Czech, "Chcete smazat nejlepší výsledky?" },
 			{ Lang::Danish, "Ryd pointtavlen?" },
 			{ Lang::German, "Bestenliste löschen?" },
@@ -1181,7 +1164,7 @@ const TextArray translations::Translations =
 			{ Lang::Spanish, "¿Borrar las máximas puntuaciones?" },
 			{ Lang::Finnish, "Tyhjennetäänkö parhaat tulokset?" },
 			{ Lang::French, "Effacer les meilleurs scores ?" },
-			{ Lang::Hebrew, "‏‏האם לנקות את נתוני הניקוד הגבוה?" },
+			{ Lang::Hebrew, "\u200F\u200Fהאם לנקות את נתוני הניקוד הגבוה?" },
 			{ Lang::Hungarian, "Törli a legjobb eredményeket?" },
 			{ Lang::Italian, "Cancellare i punteggi migliori?" },
 			{ Lang::Japanese, "ハイスコアをクリアしますか?" },
@@ -1230,7 +1213,7 @@ const TextArray translations::Translations =
 	{
 		Msg::STRING144,
 		{
-			{ Lang::Arabic, "‏‏تحذير:" },
+			{ Lang::Arabic, "\u200F\u200Fتحذير:" },
 			{ Lang::Czech, "Upozornění:" },
 			{ Lang::Danish, "Advarsel:" },
 			{ Lang::German, "Warnung:" },
@@ -1977,7 +1960,7 @@ const TextArray translations::Translations =
 			{ Lang::Russian, "Инопланетная угроза" },
 			{ Lang::Swedish, "Pigs in Space" },
 			{ Lang::Turkish, "Yabancı İstilası" },
-			{ Lang::SimplifiedChinese, "外星人的威协" },
+			{ Lang::SimplifiedChinese, "外星人的威胁" },
 			{ Lang::TraditionalChinese, "異境驚魂" },
 		},
 	},
@@ -2912,7 +2895,7 @@ const TextArray translations::Translations =
 	{
 		Msg::STRING204,
 		{
-			{ Lang::Arabic, "حول ‎3D Pinball" },
+			{ Lang::Arabic, "حول \u200E3D Pinball" },
 			{ Lang::Czech, "Co je hra 3D Pinball" },
 			{ Lang::Danish, "Om 3D Pinball" },
 			{ Lang::German, "Info" },
@@ -4413,7 +4396,7 @@ const TextArray translations::Translations =
 			{ Lang::Russian, "Войдите в червоточину" },
 			{ Lang::Swedish, "Skjut in kulan i ett maskhål" },
 			{ Lang::Turkish, "Solucan Deliği Vur" },
-			{ Lang::SimplifiedChinese, "击中虫孔" },
+			{ Lang::SimplifiedChinese, "击中旋涡式星体" },
 			{ Lang::TraditionalChinese, "命中蟲孔" },
 		},
 	},
@@ -4478,7 +4461,7 @@ const TextArray translations::Translations =
 	{
 		Msg::STRING270,
 		{
-			{ Lang::Arabic, "‏‏خطأ:" },
+			{ Lang::Arabic, "\u200F\u200Fخطأ:" },
 			{ Lang::Czech, "Chyba:" },
 			{ Lang::Danish, "Fejl:" },
 			{ Lang::German, "Fehler:" },
@@ -4487,7 +4470,7 @@ const TextArray translations::Translations =
 			{ Lang::Spanish, "Error:" },
 			{ Lang::Finnish, "Virhe:" },
 			{ Lang::French, "Erreur :" },
-			{ Lang::Hebrew, "‏‏שגיאה:" },
+			{ Lang::Hebrew, "\u200F\u200Fשגיאה:" },
 			{ Lang::Hungarian, "Hiba:" },
 			{ Lang::Italian, "Errore:" },
 			{ Lang::Japanese, "エラー:" },
@@ -4507,7 +4490,7 @@ const TextArray translations::Translations =
 	{
 		Msg::STRING271,
 		{
-			{ Lang::Arabic, "‏‏لا يمكن العثور على طاولات أخرى." },
+			{ Lang::Arabic, "\u200F\u200Fلا يمكن العثور على طاولات أخرى." },
 			{ Lang::Czech, "Nelze nalézt další stoly." },
 			{ Lang::Danish, "Det er ikke muligt at finde andre borde." },
 			{ Lang::German, "Es wurde kein anderer Tisch gefunden." },
@@ -4516,7 +4499,7 @@ const TextArray translations::Translations =
 			{ Lang::Spanish, "No se pueden encontrar otras mesas." },
 			{ Lang::Finnish, "Muita pöytiä ei löytynyt." },
 			{ Lang::French, "Impossible de trouver d'autres flippers." },
-			{ Lang::Hebrew, "‏‏לא נמצאו שולחנות אחרים." },
+			{ Lang::Hebrew, "\u200F\u200Fלא נמצאו שולחנות אחרים." },
 			{ Lang::Hungarian, "Nincs másik asztal." },
 			{ Lang::Italian, "Impossibile trovare altre tabelle." },
 			{ Lang::Japanese, "ほかのテーブルが見つかりません。" },
@@ -4536,7 +4519,7 @@ const TextArray translations::Translations =
 	{
 		Msg::STRING272,
 		{
-			{ Lang::Arabic, "‎3D Pinball\nSpace Cadet" },
+			{ Lang::Arabic, "\u200E3D Pinball\nSpace Cadet" },
 			{ Lang::Czech, "3D Pinball\nSpace Cadet" },
 			{ Lang::Danish, "3D Pinball\nSpace Cadet" },
 			{ Lang::German, "3D-Pinball\nSpace Cadet" },
@@ -4710,7 +4693,7 @@ const TextArray translations::Translations =
 	{
 		Msg::STRING279,
 		{
-			{ Lang::Arabic, "‏‏لا توجد ذاكرة كافية لتشغيل ‎3D Pinball." },
+			{ Lang::Arabic, "\u200F\u200Fلا توجد ذاكرة كافية لتشغيل \u200E3D Pinball." },
 			{ Lang::Czech, "Ke spuštění hry 3D Pinball není dostatek paměti." },
 			{ Lang::Danish, "Der er ikke tilstrækkelig hukommelse til at køre 3D Pinball." },
 			{ Lang::German, "Für 3D-Pinball ist nicht genügend Arbeitsspeicher verfügbar." },
@@ -4719,7 +4702,7 @@ const TextArray translations::Translations =
 			{ Lang::Spanish, "Memoria insuficiente para ejecutar 3D Pinball." },
 			{ Lang::Finnish, "Liian vähän muistia 3D Pinballin suorittamiseen." },
 			{ Lang::French, "Mémoire insuffisante pour exécuter Pinball 3D." },
-			{ Lang::Hebrew, "‏‏אין די זיכרון להפעלת Pinball תלת-מימדי." },
+			{ Lang::Hebrew, "\u200F\u200Fאין די זיכרון להפעלת Pinball תלת-מימדי." },
 			{ Lang::Hungarian, "Nincs elég memória a 3D-flipper futtatásához." },
 			{ Lang::Italian, "Memoria insufficiente per eseguire 3D Pinball." },
 			{ Lang::Japanese, "メモリ不足のため 3D ピンボールを起動できません" },
@@ -5002,6 +4985,14 @@ const TextArray translations::Translations =
 		{
 			{ Lang::English, "Jackpot Doubled" },
 			{ Lang::Russian, "Джекпот удвоен" },
+			{ Lang::SimplifiedChinese, "头奖翻倍" },
+			{ Lang::TraditionalChinese, "幸運大獎翻倍" },
+		},
+	},
+	{
+		Msg::ControlMissionJackpot,
+		{
+			{ Lang::English, "Jackpot!\n%ld" },
 		},
 	},
 	{
@@ -5239,7 +5230,7 @@ const TextArray translations::Translations =
 	{
 		Msg::KEYMAPPER_Caption,
 		{
-			{ Lang::Arabic, "‎3D Pinball: عناصر تحكم اللاعب" },
+			{ Lang::Arabic, "\u200E3D Pinball: عناصر تحكم اللاعب" },
 			{ Lang::Czech, "Ovládání hry 3D Pinball" },
 			{ Lang::Danish, "3D Pinball: Styreredskaber for spiller" },
 			{ Lang::German, "3D-Pinball: Bedienelemente" },
@@ -5500,7 +5491,7 @@ const TextArray translations::Translations =
 	{
 		Msg::KEYMAPPER_Help2,
 		{
-			{ Lang::Arabic, "لاستعادة ‎3D Pinball إلى الإعدادات الأصلية، اختر \"الافتراضي\" ثم اختر \"موافق\". لاستخدام مفاتيح الأسهم الموجودة في لوحة المفاتيح الرقمية، تأكد أن NUMLOCK مغلق" },
+			{ Lang::Arabic, "لاستعادة \u200E3D Pinball إلى الإعدادات الأصلية، اختر \"الافتراضي\" ثم اختر \"موافق\". لاستخدام مفاتيح الأسهم الموجودة في لوحة المفاتيح الرقمية، تأكد أن NUMLOCK مغلق" },
 			{ Lang::Czech, "Původní nastavení hry 3D Pinball obnovíte klepnutím na tlačítko Výchozí a poté OK. Pokud chcete používat šipkové klávesy na numerické klávesnici, musí být indikátor Num Lock vypnutý." },
 			{ Lang::Danish, "Hvis du vil gendanne de oprindelige indstillinger for 3D Pinball, skal du klikke på Standard og derefter på OK. Hvis du vil bruge tasterne på det numeriske tastatur, skal NumLock være slået fra." },
 			{ Lang::German, "Klicken Sie auf \"Standard\" und auf \"OK\", um die ursprünglichen Einstellungen von 3D-Pinball wiederherzustellen. Stellen Sie sicher, dass die Num-Taste ausgeschaltet ist, um mit den Pfeiltasten der Zehnertastatur arbeiten zu können." },
@@ -6242,6 +6233,2899 @@ const TextArray translations::Translations =
 		Msg::Menu1_ToggleShowMenu,
 		{
 			{ Lang::English, "Show Menu"},
+		}
+	},
+	{
+		Msg::Menu1_ToggleUpscaledArt,
+		{
+			{ Lang::English, "Upscaled Art"},
+			{ Lang::German, "Hochskalierte Grafik"},
+		}
+	},
+	{
+		Msg::Menu1_ToggleEdition,
+		{
+			{ Lang::English, "Space Cadet 2026"},
+		}
+	},
+	{
+		Msg::EditionHint,
+		{
+			{ Lang::English, "This is Space Cadet 2026. %s switches to the classic game."},
+		}
+	},
+	{
+		Msg::Definitive_Play,
+		{
+			{ Lang::English, "Play" },
+		}
+	},
+	{
+		Msg::Definitive_Controls,
+		{
+			{ Lang::English, "Controls" },
+		}
+	},
+	{
+		Msg::Definitive_Credits,
+		{
+			{ Lang::English, "Credits" },
+		}
+	},
+	{
+		Msg::Definitive_Back,
+		{
+			{ Lang::English, "Back" },
+		}
+	},
+	{
+		Msg::Definitive_Choose,
+		{
+			{ Lang::English, "Choose" },
+		}
+	},
+	{
+		Msg::Definitive_Select,
+		{
+			{ Lang::English, "Select" },
+		}
+	},
+	{
+		Msg::Definitive_Scroll,
+		{
+			{ Lang::English, "Scroll" },
+		}
+	},
+	{
+		Msg::Definitive_Version,
+		{
+			{ Lang::English, "Version %s" },
+		}
+	},
+	{
+		Msg::Definitive_Settings,
+		{
+			{ Lang::English, "Settings" },
+		}
+	},
+	{
+		Msg::Definitive_Edition,
+		{
+			{ Lang::English, "Edition" },
+		}
+	},
+	{
+		Msg::Definitive_Classic,
+		{
+			{ Lang::English, "Classic" },
+		}
+	},
+	{
+		Msg::Definitive_Language,
+		{
+			{ Lang::English, "Language" },
+		}
+	},
+	{
+		Msg::Definitive_Display,
+		{
+			{ Lang::English, "Display" },
+		}
+	},
+	{
+		Msg::Definitive_Graphics,
+		{
+			{ Lang::English, "Graphics" },
+		}
+	},
+	{
+		Msg::Definitive_Audio,
+		{
+			{ Lang::English, "Audio" },
+		}
+	},
+	{
+		Msg::Definitive_Accessibility,
+		{
+			{ Lang::English, "Accessibility" },
+		}
+	},
+	{
+		Msg::Definitive_Group,
+		{
+			{ Lang::English, "Group" },
+		}
+	},
+	{
+		Msg::Definitive_Change,
+		{
+			{ Lang::English, "Change" },
+		}
+	},
+	{
+		Msg::Definitive_EditionNote,
+		{
+			{ Lang::English, "Classic is the game as it was. %s switches during play." },
+		}
+	},
+	{
+		Msg::Definitive_EndsGame,
+		{
+			{ Lang::English, "Ends the game in progress" },
+		}
+	},
+	{
+		Msg::Definitive_Restarts,
+		{
+			{ Lang::English, "Restarts the game" },
+		}
+	},
+	{
+		Msg::Definitive_Prefer3DPB,
+		{
+			{ Lang::English, "Prefer 3D Pinball's data to Full Tilt's" },
+		}
+	},
+	{
+		Msg::Definitive_Largest,
+		{
+			{ Lang::English, "Largest" },
+		}
+	},
+	{
+		Msg::Definitive_IntegerScaling,
+		{
+			{ Lang::English, "Integer scaling" },
+		}
+	},
+	{
+		Msg::Definitive_StackedLayout,
+		{
+			{ Lang::English, "Panel under the table in tall windows" },
+		}
+	},
+	{
+		Msg::Definitive_MatchRefresh,
+		{
+			{ Lang::English, "Match the display's refresh rate" },
+		}
+	},
+	{
+		Msg::Definitive_Fps,
+		{
+			{ Lang::English, "Frames per second" },
+		}
+	},
+	{
+		Msg::Definitive_Ups,
+		{
+			{ Lang::English, "Updates per second" },
+		}
+	},
+	{
+		Msg::Definitive_Uncapped,
+		{
+			{ Lang::English, "Uncapped speed" },
+		}
+	},
+	{
+		Msg::Definitive_PreciseSleep,
+		{
+			{ Lang::English, "Precise frame timing" },
+		}
+	},
+	{
+		Msg::Definitive_HideCursor,
+		{
+			{ Lang::English, "Hide the mouse pointer" },
+		}
+	},
+	{
+		Msg::Definitive_Rotation,
+		{
+			{ Lang::English, "Screen rotation" },
+		}
+	},
+	{
+		Msg::Definitive_RotationNote,
+		{
+			{ Lang::English, "Clockwise, for a monitor on its side as in a cabinet" },
+		}
+	},
+	{
+		Msg::Definitive_UpscaleSize,
+		{
+			{ Lang::English, "Upscale size" },
+		}
+	},
+	{
+		Msg::Definitive_Backdrop,
+		{
+			{ Lang::English, "Backdrop" },
+		}
+	},
+	{
+		Msg::Definitive_LinearFiltering,
+		{
+			{ Lang::English, "Linear filtering" },
+		}
+	},
+	{
+		Msg::Definitive_PostProcessing,
+		{
+			{ Lang::English, "Post-processing" },
+		}
+	},
+	{
+		Msg::Definitive_None,
+		{
+			{ Lang::English, "None" },
+		}
+	},
+	{
+		Msg::Definitive_Crt,
+		{
+			{ Lang::English, "CRT" },
+		}
+	},
+	{
+		Msg::Definitive_SmoothEdges,
+		{
+			{ Lang::English, "Smooth edges" },
+		}
+	},
+	{
+		Msg::Definitive_FontFile,
+		{
+			{ Lang::English, "Font file" },
+		}
+	},
+	{
+		Msg::Definitive_FontNote,
+		{
+			{ Lang::English, "For text the built-in fonts lack; restarts the game" },
+		}
+	},
+	{
+		Msg::Definitive_NoGpuWeb,
+		{
+			{ Lang::English, "Not in the browser" },
+		}
+	},
+	{
+		Msg::Definitive_OldSdl,
+		{
+			{ Lang::English, "Needs SDL 3.4 or newer" },
+		}
+	},
+	{
+		Msg::Definitive_NoGpuSoftware,
+		{
+			{ Lang::English, "Not with the software renderer" },
+		}
+	},
+	{
+		Msg::Definitive_NoGpu,
+		{
+			{ Lang::English, "Needs Vulkan, Direct3D 12 or Metal" },
+		}
+	},
+	{
+		Msg::Definitive_EffectsFailed,
+		{
+			{ Lang::English, "Could not be set up on this graphics card" },
+		}
+	},
+	{
+		Msg::Definitive_Lighting,
+		{
+			{ Lang::English, "Lighting" },
+		}
+	},
+	{
+		Msg::Definitive_LampGlow,
+		{
+			{ Lang::English, "Lamp glow" },
+		}
+	},
+	{
+		Msg::Definitive_ShadedBall,
+		{
+			{ Lang::English, "Shaded ball" },
+		}
+	},
+	{
+		Msg::Definitive_ReducedMotion,
+		{
+			{ Lang::English, "Reduced motion" },
+		}
+	},
+	{
+		Msg::Definitive_ReducedMotionNote,
+		{
+			{ Lang::English, "The lamps' glow holds still, the table doesn't shake when nudged and the cursor doesn't blink" },
+		}
+	},
+	{
+		Msg::Definitive_TextSize,
+		{
+			{ Lang::English, "Text size" },
+		}
+	},
+	{
+		Msg::Definitive_TextSizeNote,
+		{
+			{ Lang::English, "Larger text in the menus, the guide and the HUD" },
+		}
+	},
+	{
+		Msg::Definitive_HighContrast,
+		{
+			{ Lang::English, "High-contrast HUD" },
+		}
+	},
+	{
+		Msg::Definitive_HighContrastNote,
+		{
+			{ Lang::English, "A black panel with white labels and a white rim, and no unlit digit segments" },
+		}
+	},
+	{
+		Msg::Definitive_PanelArt,
+		{
+			{ Lang::English, "Panel art" },
+		}
+	},
+	{
+		Msg::Definitive_PanelArtNote,
+		{
+			{ Lang::English, "The art of the table's own score panel, at the top of the HUD" },
+		}
+	},
+	{
+		Msg::Definitive_Colours,
+		{
+			{ Lang::English, "Colours" },
+		}
+	},
+	{
+		Msg::Definitive_ColoursStandard,
+		{
+			{ Lang::English, "Standard" },
+		}
+	},
+	{
+		Msg::Definitive_ColoursSafe,
+		{
+			{ Lang::English, "Red-green safe" },
+		}
+	},
+	{
+		Msg::Definitive_ColoursNote,
+		{
+			{ Lang::English, "Amber and blue in place of orange and red; warnings also show a bar" },
+		}
+	},
+	{
+		Msg::Definitive_Stats,
+		{
+			{ Lang::English, "Stats" },
+		}
+	},
+	{
+		Msg::Definitive_Achievements,
+		{
+			{ Lang::English, "Achievements" },
+		}
+	},
+	{
+		Msg::Definitive_StatsPlace,
+		{
+			{ Lang::English, "Kept on this computer, for this table only" },
+		}
+	},
+	{
+		Msg::Definitive_StatGames,
+		{
+			{ Lang::English, "Games played" },
+		}
+	},
+	{
+		Msg::Definitive_StatMissions,
+		{
+			{ Lang::English, "Missions finished" },
+		}
+	},
+	{
+		Msg::Definitive_StatBestRank,
+		{
+			{ Lang::English, "Highest rank" },
+		}
+	},
+	{
+		Msg::Definitive_StatBallsSaved,
+		{
+			{ Lang::English, "Balls saved" },
+		}
+	},
+	{
+		Msg::Definitive_StatExtraBalls,
+		{
+			{ Lang::English, "Extra balls earned" },
+		}
+	},
+	{
+		Msg::Definitive_StatMultiballs,
+		{
+			{ Lang::English, "Multiballs" },
+		}
+	},
+	{
+		Msg::Definitive_StatBestScore,
+		{
+			{ Lang::English, "Best score" },
+		}
+	},
+	{
+		Msg::Definitive_StatEachMission,
+		{
+			{ Lang::English, "Missions finished, one by one" },
+		}
+	},
+	{
+		Msg::Definitive_Locked,
+		{
+			{ Lang::English, "Locked" },
+		}
+	},
+	{
+		Msg::Definitive_Unlocked,
+		{
+			{ Lang::English, "Unlocked %s" },
+		}
+	},
+	{
+		Msg::Definitive_AchievementUnlocked,
+		{
+			{ Lang::English, "Achievement unlocked" },
+		}
+	},
+	{
+		Msg::Definitive_ClearStats,
+		{
+			{ Lang::English, "Clear stats and achievements" },
+		}
+	},
+	{
+		Msg::Definitive_ClearStatsConfirm,
+		{
+			{ Lang::English, "Clear this table's stats and achievements?" },
+		}
+	},
+	{
+		Msg::Definitive_Recordings,
+		{
+			{ Lang::English, "Recordings" },
+		}
+	},
+	{
+		Msg::Definitive_Table,
+		{
+			{ Lang::English, "Table" },
+		}
+	},
+	{
+		Msg::Definitive_TableCurrent,
+		{
+			{ Lang::English, "Current" },
+		}
+	},
+	{
+		Msg::Definitive_TableBest,
+		{
+			{ Lang::English, "Best score %s" },
+		}
+	},
+	{
+		Msg::Definitive_RecordSessions,
+		{
+			{ Lang::English, "Record sessions" },
+		}
+	},
+	{
+		Msg::Definitive_RecordSessionsNote,
+		{
+			{ Lang::English, "From the next launch, the session is kept here to play back until the game restarts; about 60 MB an hour, and one without a game isn't kept" },
+		}
+	},
+	{
+		Msg::Definitive_NoRecordings,
+		{
+			{ Lang::English, "No recordings yet. With Record sessions on, the games played from the next start show here." },
+		}
+	},
+	{
+		Msg::Definitive_RecordingGames,
+		{
+			{ Lang::English, "%s games" },
+		}
+	},
+	{
+		Msg::Definitive_RecordingGame,
+		{
+			{ Lang::English, "1 game" },
+		}
+	},
+	{
+		Msg::Definitive_OtherGameData,
+		{
+			{ Lang::English, "Recorded with other game data" },
+		}
+	},
+	{
+		Msg::Definitive_PlayRecording,
+		{
+			{ Lang::English, "Play" },
+		}
+	},
+	{
+		Msg::Definitive_DeleteRecording,
+		{
+			{ Lang::English, "Delete" },
+		}
+	},
+	{
+		Msg::Definitive_DeleteRecordingConfirm,
+		{
+			{ Lang::English, "Delete this recording for good?" },
+		}
+	},
+	{
+		Msg::Definitive_Recording,
+		{
+			{ Lang::English, "Recording" },
+		}
+	},
+	{
+		Msg::Definitive_RecordingEnded,
+		{
+			{ Lang::English, "End of the recording" },
+		}
+	},
+	{
+		Msg::Definitive_RecordingDiverged,
+		{
+			{ Lang::English, "This recording plays differently in this version of the game, so it stops here" },
+		}
+	},
+	{
+		Msg::Definitive_Pause,
+		{
+			{ Lang::English, "Pause" },
+		}
+	},
+	{
+		Msg::Definitive_Seek,
+		{
+			{ Lang::English, "Seek" },
+		}
+	},
+	{
+		Msg::Definitive_AchFirstGame,
+		{
+			{ Lang::English, "Lift-off" },
+		}
+	},
+	{
+		Msg::Definitive_AchFirstGameText,
+		{
+			{ Lang::English, "Play a game to the end" },
+		}
+	},
+	{
+		Msg::Definitive_AchFirstMission,
+		{
+			{ Lang::English, "Mission accomplished" },
+		}
+	},
+	{
+		Msg::Definitive_AchFirstMissionText,
+		{
+			{ Lang::English, "Finish a mission" },
+		}
+	},
+	{
+		Msg::Definitive_AchFiveMissions,
+		{
+			{ Lang::English, "Busy shift" },
+		}
+	},
+	{
+		Msg::Definitive_AchFiveMissionsText,
+		{
+			{ Lang::English, "Finish five missions in one game" },
+		}
+	},
+	{
+		Msg::Definitive_AchEveryMission,
+		{
+			{ Lang::English, "Seen it all" },
+		}
+	},
+	{
+		Msg::Definitive_AchEveryMissionText,
+		{
+			{ Lang::English, "Finish each of the 17 missions at least once" },
+		}
+	},
+	{
+		Msg::Definitive_AchEnsign,
+		{
+			{ Lang::English, "Promoted" },
+		}
+	},
+	{
+		Msg::Definitive_AchEnsignText,
+		{
+			{ Lang::English, "Reach the rank of Ensign" },
+		}
+	},
+	{
+		Msg::Definitive_AchCaptain,
+		{
+			{ Lang::English, "Captain on the bridge" },
+		}
+	},
+	{
+		Msg::Definitive_AchCaptainText,
+		{
+			{ Lang::English, "Reach the rank of Captain" },
+		}
+	},
+	{
+		Msg::Definitive_AchCommodore,
+		{
+			{ Lang::English, "Flag officer" },
+		}
+	},
+	{
+		Msg::Definitive_AchCommodoreText,
+		{
+			{ Lang::English, "Reach the rank of Commodore" },
+		}
+	},
+	{
+		Msg::Definitive_AchFleetAdmiral,
+		{
+			{ Lang::English, "Fleet Admiral" },
+		}
+	},
+	{
+		Msg::Definitive_AchFleetAdmiralText,
+		{
+			{ Lang::English, "Reach the highest rank, Fleet Admiral" },
+		}
+	},
+	{
+		Msg::Definitive_AchBallSaved,
+		{
+			{ Lang::English, "Second chance" },
+		}
+	},
+	{
+		Msg::Definitive_AchBallSavedText,
+		{
+			{ Lang::English, "Have a drained ball sent back into play" },
+		}
+	},
+	{
+		Msg::Definitive_AchExtraBall,
+		{
+			{ Lang::English, "Shoot again" },
+		}
+	},
+	{
+		Msg::Definitive_AchExtraBallText,
+		{
+			{ Lang::English, "Earn an extra ball" },
+		}
+	},
+	{
+		Msg::Definitive_AchMultiball,
+		{
+			{ Lang::English, "Multiball" },
+		}
+	},
+	{
+		Msg::Definitive_AchMultiballText,
+		{
+			{ Lang::English, "Have two balls in play at once" },
+		}
+	},
+	{
+		Msg::Definitive_AchMillion,
+		{
+			{ Lang::English, "Millionaire" },
+		}
+	},
+	{
+		Msg::Definitive_AchMillionText,
+		{
+			{ Lang::English, "Score 1,000,000 points in one game" },
+		}
+	},
+	{
+		Msg::Definitive_AchTenMillion,
+		{
+			{ Lang::English, "Ten million" },
+		}
+	},
+	{
+		Msg::Definitive_AchTenMillionText,
+		{
+			{ Lang::English, "Score 10,000,000 points in one game" },
+		}
+	},
+	{
+		Msg::Definitive_AchHundredMillion,
+		{
+			{ Lang::English, "Hundred million" },
+		}
+	},
+	{
+		Msg::Definitive_AchHundredMillionText,
+		{
+			{ Lang::English, "Score 100,000,000 points in one game" },
+		}
+	},
+	{
+		Msg::Definitive_AchSteadyHands,
+		{
+			{ Lang::English, "Steady hands" },
+		}
+	},
+	{
+		Msg::Definitive_AchSteadyHandsText,
+		{
+			{ Lang::English, "Play a game to the end without tilting" },
+		}
+	},
+	{
+		Msg::Definitive_AchRegular,
+		{
+			{ Lang::English, "Regular" },
+		}
+	},
+	{
+		Msg::Definitive_AchRegularText,
+		{
+			{ Lang::English, "Play 25 games to the end" },
+		}
+	},
+	{
+		Msg::Definitive_SoundVolume,
+		{
+			{ Lang::English, "Sound volume" },
+		}
+	},
+	{
+		Msg::Definitive_Stereo,
+		{
+			{ Lang::English, "Stereo sound effects" },
+		}
+	},
+	{
+		Msg::Definitive_SoundChannels,
+		{
+			{ Lang::English, "Sound channels" },
+		}
+	},
+	{
+		Msg::Definitive_MusicVolume,
+		{
+			{ Lang::English, "Music volume" },
+		}
+	},
+	{
+		Msg::Definitive_RoomReverb,
+		{
+			{ Lang::English, "Room reverb" },
+		}
+	},
+	{
+		Msg::Definitive_RoomReverbNote,
+		{
+			{ Lang::English, "The sound effects ring a little, as in the room a table stands in" },
+		}
+	},
+	{
+		Msg::Definitive_WideStereo,
+		{
+			{ Lang::English, "Wider stereo" },
+		}
+	},
+	{
+		Msg::Definitive_WideStereoNote,
+		{
+			{ Lang::English, "Spreads the sound effects further apart; needs stereo sound effects" },
+		}
+	},
+	{
+		Msg::Definitive_SoundPack,
+		{
+			{ Lang::English, "Sound pack" },
+		}
+	},
+	{
+		Msg::Definitive_SoundPackNote,
+		{
+			{ Lang::English, "Folders of WAV files in the sounds folder of the preferences folder, named as the table's sounds" },
+		}
+	},
+	{
+		Msg::Definitive_PressInput,
+		{
+			{ Lang::English, "Press a key..." },
+		}
+	},
+	{
+		Msg::Definitive_CancelInput,
+		{
+			{ Lang::English, "Esc or a tap cancels" },
+		}
+	},
+	{
+		Msg::Definitive_Rumble,
+		{
+			{ Lang::English, "Gamepad rumble" },
+		}
+	},
+	{
+		Msg::Definitive_DefaultControls,
+		{
+			{ Lang::English, "Restore the default controls" },
+		}
+	},
+	{
+		Msg::Definitive_UiScale,
+		{
+			{ Lang::English, "UI scale" },
+		}
+	},
+	{
+		Msg::Definitive_UiScaleNote,
+		{
+			{ Lang::English, "The size of the menus and their text" },
+		}
+	},
+	{
+		Msg::Definitive_Paused,
+		{
+			{ Lang::English, "Paused" },
+		}
+	},
+	{
+		Msg::Definitive_Resume,
+		{
+			{ Lang::English, "Resume" },
+		}
+	},
+	{
+		Msg::Definitive_SwitchToClassic,
+		{
+			{ Lang::English, "Switch to Classic" },
+		}
+	},
+	{
+		Msg::Definitive_Restart,
+		{
+			{ Lang::English, "Restart" },
+		}
+	},
+	{
+		Msg::Definitive_QuitToTitle,
+		{
+			{ Lang::English, "Quit to title" },
+		}
+	},
+	{
+		Msg::Definitive_EndGame,
+		{
+			{ Lang::English, "End this game?" },
+		}
+	},
+	{
+		Msg::Definitive_ChangeTable,
+		{
+			{ Lang::English, "Change table" },
+		}
+	},
+	{
+		Msg::Definitive_NewHighScore,
+		{
+			{ Lang::English, "New high score" },
+		}
+	},
+	{
+		Msg::Definitive_PlayAgain,
+		{
+			{ Lang::English, "Play again" },
+		}
+	},
+	{
+		Msg::Definitive_ToTitle,
+		{
+			{ Lang::English, "Title" },
+		}
+	},
+	{
+		Msg::Definitive_Place,
+		{
+			{ Lang::English, "%s, place %d of 5" },
+		}
+	},
+	{
+		Msg::Definitive_Delete,
+		{
+			{ Lang::English, "Delete" },
+		}
+	},
+	{
+		Msg::Definitive_Done,
+		{
+			{ Lang::English, "Done" },
+		}
+	},
+	{
+		Msg::Definitive_DataTitle,
+		{
+			{ Lang::English, "Game data needed" },
+		}
+	},
+	{
+		Msg::Definitive_DataExplain,
+		{
+			{ Lang::English, "Space Cadet 2026 plays the table of 3D Pinball for Windows or Full Tilt! Pinball, from files you already have: PINBALL.DAT or CADET.DAT and the sounds beside it. It looked in these places and found none:" },
+		}
+	},
+	{
+		Msg::Definitive_DataChoose,
+		{
+			{ Lang::English, "Choose the game data folder" },
+		}
+	},
+	{
+		Msg::Definitive_DataNoCopy,
+		{
+			{ Lang::English, "The game reads the files where they are and copies nothing." },
+		}
+	},
+	{
+		Msg::Definitive_DataNotThere,
+		{
+			{ Lang::English, "The folder chosen has no game data." },
+		}
+	},
+	{
+		Msg::Definitive_DataFolder,
+		{
+			{ Lang::English, "Game data folder" },
+		}
+	},
+	{
+		Msg::Definitive_DataStartFolder,
+		{
+			{ Lang::English, "The folder the game started in" },
+		}
+	},
+	{
+		Msg::Definitive_DataNoDialog,
+		{
+			{ Lang::English, "The folder dialog could not open (%s). Put the game data in one of the places above." },
+		}
+	},
+	{
+		Msg::Definitive_DataDialogFailed,
+		{
+			{ Lang::English, "The folder dialog could not open (%s)." },
+		}
+	},
+	{
+		Msg::Definitive_Ball,
+		{
+			{ Lang::English, "Ball" },
+		}
+	},
+	{
+		Msg::Definitive_Mission,
+		{
+			{ Lang::English, "Mission" },
+		}
+	},
+	{
+		Msg::Definitive_Rank,
+		{
+			{ Lang::English, "Rank" },
+		}
+	},
+	{
+		Msg::Definitive_MissionGuide,
+		{
+			{ Lang::English, "Mission Guide" },
+		}
+	},
+	{
+		Msg::Definitive_GuideBasics,
+		{
+			{ Lang::English, "Basics" },
+		}
+	},
+	{
+		Msg::Definitive_GuideOffered,
+		{
+			{ Lang::English, "Missions offered at %s" },
+		}
+	},
+	{
+		Msg::Definitive_GuideUpper,
+		{
+			{ Lang::English, "Upper target" },
+		}
+	},
+	{
+		Msg::Definitive_GuideMiddle,
+		{
+			{ Lang::English, "Middle target" },
+		}
+	},
+	{
+		Msg::Definitive_GuideLower,
+		{
+			{ Lang::English, "Lower target" },
+		}
+	},
+	{
+		Msg::Definitive_GuideAll,
+		{
+			{ Lang::English, "All three targets" },
+		}
+	},
+	{
+		Msg::Definitive_GuideNow,
+		{
+			{ Lang::English, "Now" },
+		}
+	},
+	{
+		Msg::Definitive_GuidePoints,
+		{
+			{ Lang::English, "%s points" },
+		}
+	},
+	{
+		Msg::Definitive_GuideMissionsTitle,
+		{
+			{ Lang::English, "How missions work" },
+		}
+	},
+	{
+		Msg::Definitive_GuideMissions,
+		{
+			{ Lang::English, "Missions earn points and raise your rank. Hit one of the three mission targets beside the launch bumpers, on the left, to choose a mission; hitting another target changes the choice. Then shoot the launch ramp to accept it. Which mission a target chooses depends on your rank, and hitting all three chooses a fourth. A mission can only be accepted while the ship has fuel; the fuel targets at the top left and the fuel chute on the left refuel it. A mission ends when it is done, when the fuel runs out, or when you lose the ball." },
+		}
+	},
+	{
+		Msg::Definitive_GuideRanksTitle,
+		{
+			{ Lang::English, "How ranks work" },
+		}
+	},
+	{
+		Msg::Definitive_GuideRanks,
+		{
+			{ Lang::English, "There are nine ranks, from Cadet to Fleet Admiral, shown by the lamps in the middle of the table. Each mission you finish lights part of the ring of 18 lamps around them, as the lamps under each mission here show; when the ring is full you are promoted and it starts again. Your rank decides which missions the mission targets offer, and it stays from ball to ball." },
+		}
+	},
+	{
+		Msg::Definitive_GuideFullTiltTitle,
+		{
+			{ Lang::English, "Full Tilt! Pinball" },
+		}
+	},
+	{
+		Msg::Definitive_GuideFullTilt,
+		{
+			{ Lang::English, "With Full Tilt! data, accepting a mission scores 100,000 points, and finishing one also pays the jackpot and lights Replay, which gives you the ball back the next time it drains." },
+		}
+	},
+	{
+		Msg::Definitive_GuideTargetPractice,
+		{
+			{ Lang::English, "Hit the attack bumpers, in the upper middle of the table, 8 times." },
+		}
+	},
+	{
+		Msg::Definitive_GuideLaunchTraining,
+		{
+			{ Lang::English, "Shoot the launch ramp, on the left, 3 times." },
+		}
+	},
+	{
+		Msg::Definitive_GuideReentryTraining,
+		{
+			{ Lang::English, "Roll through the re-entry lanes at the top of the table 3 times." },
+		}
+	},
+	{
+		Msg::Definitive_GuideScience,
+		{
+			{ Lang::English, "Knock down 9 drop targets, from any of the three banks." },
+		}
+	},
+	{
+		Msg::Definitive_GuideStrayComet,
+		{
+			{ Lang::English, "Hit all three targets of the right hazard bank, at the upper right, then shoot the ball into the hyperspace chute near the top." },
+		}
+	},
+	{
+		Msg::Definitive_GuideBlackHole,
+		{
+			{ Lang::English, "Upgrade the launch bumpers by lighting the three launch lanes beside them. Then shoot the ball into the black hole, beside the launch ramp, while they are still upgraded: each upgrade wears off after a minute." },
+		}
+	},
+	{
+		Msg::Definitive_GuideSpaceRadiation,
+		{
+			{ Lang::English, "Hit all three targets of the left hazard bank, at the upper left, then shoot the ball into any wormhole." },
+		}
+	},
+	{
+		Msg::Definitive_GuideBugHunt,
+		{
+			{ Lang::English, "Hit 15 targets anywhere on the table, drop targets or spot targets." },
+		}
+	},
+	{
+		Msg::Definitive_GuideAlienMenace,
+		{
+			{ Lang::English, "Upgrade the attack bumpers by lighting the three re-entry lanes at the top, then hit the attack bumpers 8 times." },
+		}
+	},
+	{
+		Msg::Definitive_GuideRescue,
+		{
+			{ Lang::English, "Upgrade the flags by knocking down the three drop targets on the right. Then, within a minute, while the flag lamps are lit, shoot the ball into the hyperspace chute near the top." },
+		}
+	},
+	{
+		Msg::Definitive_GuideSatellite,
+		{
+			{ Lang::English, "Hit the remote attack bumper, the one on its own at the top left, 3 times." },
+		}
+	},
+	{
+		Msg::Definitive_GuideRecon,
+		{
+			{ Lang::English, "Roll through any lane 15 times: the re-entry lanes, the launch lanes or the lanes beside the flippers." },
+		}
+	},
+	{
+		Msg::Definitive_GuideDoomsday,
+		{
+			{ Lang::English, "Roll through the out lanes, the outermost lanes at the bottom, 3 times." },
+		}
+	},
+	{
+		Msg::Definitive_GuideCosmicPlague,
+		{
+			{ Lang::English, "Spin the flags, at the upper left and right, 75 times, then roll over the space warp rollover at the upper left." },
+		}
+	},
+	{
+		Msg::Definitive_GuideSecret,
+		{
+			{ Lang::English, "Shoot the ball into the yellow wormhole on the right, then the red one and then the green one, both at the top." },
+		}
+	},
+	{
+		Msg::Definitive_GuideTimeWarp,
+		{
+			{ Lang::English, "Hit the rebounders 25 times: the slingshots above the flippers and the two higher up. Then shoot the launch ramp to warp forward, which promotes you and lights 12 lamps of the ring, or the hyperspace chute to warp back, which costs you a rank unless you are a Cadet." },
+		}
+	},
+	{
+		Msg::Definitive_GuideMaelstrom,
+		{
+			{ Lang::English, "Eight stages in a row: 3 drop target hits, 3 spot target hits, 5 lane passes, the fuel chute, the launch ramp, the flags, any wormhole and last the hyperspace chute." },
+		}
+	},
+	{
+		Msg::Definitive_Quest,
+		{
+			{ Lang::English, "Quest" },
+		}
+	},
+	{
+		Msg::Definitive_Multiball,
+		{
+			{ Lang::English, "Multiball" },
+		}
+	},
+	{
+		Msg::Definitive_NextQuest,
+		{
+			{ Lang::English, "Next quest: %s" },
+		}
+	},
+	{
+		Msg::Definitive_QuestsDone,
+		{
+			{ Lang::English, "Quests done: %s" },
+		}
+	},
+	{
+		Msg::Definitive_HitsLeft,
+		{
+			{ Lang::English, "Hits left: %s" },
+		}
+	},
+	{
+		Msg::Definitive_Jackpot,
+		{
+			{ Lang::English, "Jackpot" },
+		}
+	},
+	{
+		Msg::Definitive_SuperJackpot,
+		{
+			{ Lang::English, "Super Jackpot" },
+		}
+	},
+	{
+		Msg::Definitive_DragonEggs,
+		{
+			{ Lang::English, "Dragon Eggs" },
+		}
+	},
+	{
+		Msg::Definitive_Weapons,
+		{
+			{ Lang::English, "Weapons" },
+		}
+	},
+	{
+		Msg::Definitive_Armor,
+		{
+			{ Lang::English, "Armor" },
+		}
+	},
+	{
+		Msg::Definitive_DragonHoard,
+		{
+			{ Lang::English, "Dragon Hoard" },
+		}
+	},
+	{
+		Msg::Definitive_FireLizards,
+		{
+			{ Lang::English, "Fire Lizards" },
+		}
+	},
+	{
+		Msg::Definitive_RescueMaiden,
+		{
+			{ Lang::English, "Rescue Maiden" },
+		}
+	},
+	{
+		Msg::Definitive_DragonPass,
+		{
+			{ Lang::English, "Dragon Pass" },
+		}
+	},
+	{
+		Msg::Definitive_WizardsFury,
+		{
+			{ Lang::English, "Wizard's Fury" },
+		}
+	},
+	{
+		Msg::Definitive_SlayDragon,
+		{
+			{ Lang::English, "Slay Dragon" },
+		}
+	},
+	{
+		Msg::Definitive_RestartQuest,
+		{
+			{ Lang::English, "Restart %s" },
+		}
+	},
+	{
+		Msg::Definitive_PictureDragon,
+		{
+			{ Lang::English, "Dragon" },
+		}
+	},
+	{
+		Msg::Definitive_PictureJackpot,
+		{
+			{ Lang::English, "Jackpot" },
+		}
+	},
+	{
+		Msg::Definitive_PictureDragonEgg,
+		{
+			{ Lang::English, "Dragon Egg" },
+		}
+	},
+	{
+		Msg::Definitive_PictureDragonEggs,
+		{
+			{ Lang::English, "%ld Dragon Eggs" },
+		}
+	},
+	{
+		Msg::Definitive_PictureSpell,
+		{
+			{ Lang::English, "Spell" },
+		}
+	},
+	{
+		Msg::Definitive_PictureFrantzsAx,
+		{
+			{ Lang::English, "Frantz's Ax" },
+		}
+	},
+	{
+		Msg::Definitive_PictureFirebow,
+		{
+			{ Lang::English, "Firebow" },
+		}
+	},
+	{
+		Msg::Definitive_PictureDragonLance,
+		{
+			{ Lang::English, "Dragon Lance" },
+		}
+	},
+	{
+		Msg::Definitive_PictureSwordOfVirtue,
+		{
+			{ Lang::English, "Sword of Virtue" },
+		}
+	},
+	{
+		Msg::Definitive_PictureHelmet,
+		{
+			{ Lang::English, "Helmet" },
+		}
+	},
+	{
+		Msg::Definitive_PictureShield,
+		{
+			{ Lang::English, "Shield" },
+		}
+	},
+	{
+		Msg::Definitive_PictureChainmail,
+		{
+			{ Lang::English, "Chainmail" },
+		}
+	},
+	{
+		Msg::Definitive_PictureDragonSlain,
+		{
+			{ Lang::English, "Dragon Slain" },
+		}
+	},
+	{
+		Msg::Definitive_GuideQuests,
+		{
+			{ Lang::English, "Quests" },
+		}
+	},
+	{
+		Msg::Definitive_GuideShop,
+		{
+			{ Lang::English, "Shop" },
+		}
+	},
+	{
+		Msg::Definitive_GuideSeconds,
+		{
+			{ Lang::English, "%s seconds" },
+		}
+	},
+	{
+		Msg::Definitive_GuideBalls,
+		{
+			{ Lang::English, "%s balls" },
+		}
+	},
+	{
+		Msg::Definitive_GuideDragonQuestsTitle,
+		{
+			{ Lang::English, "Quests" },
+		}
+	},
+	{
+		Msg::Definitive_GuideDragonQuests,
+		{
+			{ Lang::English, "Five quests each run against the clock. The quest light that flashes, in the lower right, is the quest picked next: put the ball in both fire lizard sinks, in front of the lower bumpers, to start it. The well starts it one time in four, and so does a plunger shot straight into the dragon egg kickout; the quest target, the yellow target in the lower right, picks another. When a quest's time runs out, a fire lizard sink within 10 seconds takes it up again for 15 more. A quest that ends, or loses its ball, is done: its light stays on and 500,000 goes to the jackpot. With all five done, Slay Dragon starts." },
+		}
+	},
+	{
+		Msg::Definitive_GuideDragonJackpotsTitle,
+		{
+			{ Lang::English, "Jackpots" },
+		}
+	},
+	{
+		Msg::Definitive_GuideDragonJackpots,
+		{
+			{ Lang::English, "The jackpot grows by 50,000 with every spot target hit and by 75,000 with every ball in the well or the first fire lizard sink, and with every quest done, each dragon ramp shot and the pass targets in Dragon Pass, and is awarded by several quests' shots. The Super Jackpot grows by 200,000 through the dragon chute behind the dragon's neck, and with nearly every shot during Slay Dragon, which awards it when the dragon is slain." },
+		}
+	},
+	{
+		Msg::Definitive_GuideDragonItemsTitle,
+		{
+			{ Lang::English, "Weapons, armor, spells and eggs" },
+		}
+	},
+	{
+		Msg::Definitive_GuideDragonItems,
+		{
+			{ Lang::English, "Every tenth bumper hit raises a weapon: Frantz's Ax, Firebow, Dragon Lance and Sword of Virtue multiply scores by 2 to 5. The armor kickout gives a piece of armor you lack: the Chainmail lights the kickback, the Shield raises the center post and the Helmet closes an outlane, each for a while. The well casts a spell when it starts no quest, and so do all five spell targets and two tower ramp shots within 10 seconds. The two wire ramps lay dragon eggs, scoring 100,000 for each egg lit, to spend in the shop. Weapons, armor, spells and eggs all count in the bonus; weapons, armor and spells also make Slay Dragon easier." },
+		}
+	},
+	{
+		Msg::Definitive_GuideDragonHoard,
+		{
+			{ Lang::English, "Steal the dragon's nine gems, each from the shot whose gem light flashes: Gold from a bumper (10,000), Diamond from a spell target (50,000), Pearl from a tower target (60,000), Sapphire from a gargoyle target (70,000), Ruby from a fire lizard sink (100,000), Opal from the moat chute (100,000), Emerald from the tower ramp (200,000), Amethyst from the dragon ramp (250,000), and the jackpot from the dragon chute. All nine give an extra ball." },
+		}
+	},
+	{
+		Msg::Definitive_GuideFireLizards,
+		{
+			{ Lang::English, "Each ball in a fire lizard sink slays a lizard and scores 100,000 for every lizard slain so far, up to 1,000,000; the third lights the jackpot and every fourth one awards it in place of its score." },
+		}
+	},
+	{
+		Msg::Definitive_GuideRescueMaiden,
+		{
+			{ Lang::English, "The prison tower's tripwires light its windows, and each one lit awards more: 250,000, 500,000, the jackpot, then the extra ball light. With all four windows lit, put the ball in the prison tower to rescue the maiden, which ends the quest." },
+		}
+	},
+	{
+		Msg::Definitive_GuideDragonPass,
+		{
+			{ Lang::English, "The gargoyle kickout lays a dragon egg, the armor kickout awards the jackpot, and the two pass targets among the four at the top add 250,000 to it." },
+		}
+	},
+	{
+		Msg::Definitive_GuideWizardsFury,
+		{
+			{ Lang::English, "Each ball in the well gives the mystery award: an extra ball, max weapons, max armor, the jackpot or 1,000,000. After each, the award changes to another at random; the spell targets set it too." },
+		}
+	},
+	{
+		Msg::Definitive_GuideTowerBarrage,
+		{
+			{ Lang::English, "Hit the three tower targets to arm the tower lock. Each armed lock catches a ball and serves a new one; the third, with all three lock lights lit, starts the multiball. The three balls come out one second apart, the tower's windows flash and its tripwires score 100,000. It ends when one ball is left." },
+		}
+	},
+	{
+		Msg::Definitive_GuideGaggleBall,
+		{
+			{ Lang::English, "Hit all four targets at the top to slide the rocks open, then put the ball in the gargoyle kickout behind them while no quest runs. A second ball comes out of a fire lizard sink. It ends when one ball is left." },
+		}
+	},
+	{
+		Msg::Definitive_GuideDragonFlurry,
+		{
+			{ Lang::English, "Light the six D-R-A-G-O-N letters while no quest runs: put the ball in both fire lizard sinks, hit all five spell targets, shoot the dragon ramp, clear the four targets at the top, shoot the tower ramp, and hit the three tower targets. Balls come out of both fire lizard sinks, the well and the first tower lock. It ends when one ball is left." },
+		}
+	},
+	{
+		Msg::Definitive_GuideShopTitle,
+		{
+			{ Lang::English, "Dragon Egg Shop" },
+		}
+	},
+	{
+		Msg::Definitive_GuideShopText,
+		{
+			{ Lang::English, "With one ball in play, the dragon egg kickout below the dragon ramp opens the shop. Your dragon eggs buy what their number offers, or the best that is still of use: 1 to 3 eggs start the picked quest, 4 cast a spell, 5 raise a weapon, 6 give armor, 7 light the extra ball and 8 give an extra ball. The left flipper buys it and spends that many eggs, or one egg for the quest; another flipper declines for 25,000, as the shop does without eggs." },
+		}
+	},
+	{
+		Msg::Definitive_GuideSlayDragon,
+		{
+			{ Lang::English, "The dragon's mouth opens once all five quests are done, or when the last of the sword's three targets is hit while its light flashes. You have 30 seconds, and 5 more for each armor piece and for two of the four spells lit; the dragon needs 8 hits, less one for each weapon and for the other two spells lit. Each ball in the dragon's mouth before the last is a hit that adds 15 seconds and scores by how far the fire lights have run: 100,000 at first, 1,000,000 with two lit, then a chance of the jackpot (one in five with three lit) or of the extra ball light or an extra ball (one in ten with four or more), else 100,000. Bumpers, kickouts, sinks and targets add to the Super Jackpot meanwhile. The last hit slays the dragon: the Super Jackpot, 1,500,000, the jackpot, and full weapons and armor." },
+		}
+	},
+	{
+		Msg::Definitive_StatQuests,
+		{
+			{ Lang::English, "Quests done" },
+		}
+	},
+	{
+		Msg::Definitive_StatDragonsSlain,
+		{
+			{ Lang::English, "Dragons slain" },
+		}
+	},
+	{
+		Msg::Definitive_StatEachQuest,
+		{
+			{ Lang::English, "Quests done, one by one" },
+		}
+	},
+	{
+		Msg::Definitive_AchFirstQuest,
+		{
+			{ Lang::English, "Quest fulfilled" },
+		}
+	},
+	{
+		Msg::Definitive_AchFirstQuestText,
+		{
+			{ Lang::English, "Complete a quest" },
+		}
+	},
+	{
+		Msg::Definitive_AchFiveQuests,
+		{
+			{ Lang::English, "Questing knight" },
+		}
+	},
+	{
+		Msg::Definitive_AchFiveQuestsText,
+		{
+			{ Lang::English, "Complete five quests in one game" },
+		}
+	},
+	{
+		Msg::Definitive_AchEveryQuest,
+		{
+			{ Lang::English, "Hero of the realm" },
+		}
+	},
+	{
+		Msg::Definitive_AchEveryQuestText,
+		{
+			{ Lang::English, "Complete each of the five quests at least once" },
+		}
+	},
+	{
+		Msg::Definitive_AchDragonSlayer,
+		{
+			{ Lang::English, "Dragon slayer" },
+		}
+	},
+	{
+		Msg::Definitive_AchDragonSlayerText,
+		{
+			{ Lang::English, "Slay the dragon" },
+		}
+	},
+	{
+		Msg::Definitive_Mode,
+		{
+			{ Lang::English, "Mode" },
+		}
+	},
+	{
+		Msg::Definitive_NextMode,
+		{
+			{ Lang::English, "Next mode: %s" },
+		}
+	},
+	{
+		Msg::Definitive_ModesDone,
+		{
+			{ Lang::English, "Modes done: %s" },
+		}
+	},
+	{
+		Msg::Definitive_BallsInPlay,
+		{
+			{ Lang::English, "Balls in play: %s" },
+		}
+	},
+	{
+		Msg::Definitive_Brig,
+		{
+			{ Lang::English, "In the Brig" },
+		}
+	},
+	{
+		Msg::Definitive_Coins,
+		{
+			{ Lang::English, "Coins" },
+		}
+	},
+	{
+		Msg::Definitive_SpecialTreasures,
+		{
+			{ Lang::English, "Special Treasures" },
+		}
+	},
+	{
+		Msg::Definitive_MapPieces,
+		{
+			{ Lang::English, "Map Pieces" },
+		}
+	},
+	{
+		Msg::Definitive_AttackShip,
+		{
+			{ Lang::English, "Attack Ship" },
+		}
+	},
+	{
+		Msg::Definitive_BermudaTriangle,
+		{
+			{ Lang::English, "Bermuda Triangle" },
+		}
+	},
+	{
+		Msg::Definitive_Storm,
+		{
+			{ Lang::English, "Storm" },
+		}
+	},
+	{
+		Msg::Definitive_Tavern,
+		{
+			{ Lang::English, "Tavern" },
+		}
+	},
+	{
+		Msg::Definitive_TreasureHunt,
+		{
+			{ Lang::English, "Treasure Hunt" },
+		}
+	},
+	{
+		Msg::Definitive_Mutiny,
+		{
+			{ Lang::English, "Mutiny" },
+		}
+	},
+	{
+		Msg::Definitive_SwordFight,
+		{
+			{ Lang::English, "Sword Fight" },
+		}
+	},
+	{
+		Msg::Definitive_PegLegsLoot,
+		{
+			{ Lang::English, "Peg Leg's Loot" },
+		}
+	},
+	{
+		Msg::Definitive_LavaBall,
+		{
+			{ Lang::English, "Lava-Ball" },
+		}
+	},
+	{
+		Msg::Definitive_Jailbreak,
+		{
+			{ Lang::English, "Jailbreak" },
+		}
+	},
+	{
+		Msg::Definitive_GuideModes,
+		{
+			{ Lang::English, "Modes" },
+		}
+	},
+	{
+		Msg::Definitive_GuideBrig,
+		{
+			{ Lang::English, "The Brig" },
+		}
+	},
+	{
+		Msg::Definitive_GuideSkulduggeryModes,
+		{
+			{ Lang::English, "Eight modes each run against the clock. The mode light that flashes on the wheel is the mode picked next: in play, spell SKULDUGGERY with the eleven drop targets (the tavern's three, the ship's five and the parrot's three) to start it, and the letters start over. The skill shot starts five of the modes too. The captive ball, knocked into the target behind it, picks another mode, or adds 10 seconds to the mode that runs. A mode's clock starts once its lights have swept the table. A mode ends when its time runs out or its ball drains, unless the ball save serves the ball again; either way it is done: its light stays on, 750,000 goes to the jackpot, it counts for the Mode Bonus and the next mode is picked. Once all six map pieces are found, the pick is Peg Leg's Loot." },
+		}
+	},
+	{
+		Msg::Definitive_GuideSkulduggeryJackpot,
+		{
+			{ Lang::English, "The jackpot starts each game at 1,000,000 and stays when it is awarded, growing up to 10,000,000: by 20,000 with every drop target and stationary target hit, by 40,000 with every ball in a sink, and by 750,000 with every mode done. Attack Ship, Treasure Hunt, Tavern, Bermuda Triangle, Storm, Mutiny and Peg Leg's Loot award it, as their rows say, and so does buried treasure when it is dug up." },
+		}
+	},
+	{
+		Msg::Definitive_GuideSkillShotTitle,
+		{
+			{ Lang::English, "Skill Shot" },
+		}
+	},
+	{
+		Msg::Definitive_GuideSkillShot,
+		{
+			{ Lang::English, "While the ball is in the launch lane, the display rolls through nine awards, one every 0.2 seconds, and the ball leaving the lane takes the one showing. Three give coins, five start a mode (Bermuda Triangle, Attack Ship, Treasure Hunt, Tavern or Storm), and the question mark gives the Shipwreck Mystery: the next special treasure, an extra ball, the bumpers' most crew, the fathom lights, a map piece, or the buried treasure dug up. While the Shipwreck Mystery light is lit, the right outlane gives it too. Each coin award lights a coin on the wheel and scores 50,000, doubling with each coin up to 1,600,000 for the sixth." },
+		}
+	},
+	{
+		Msg::Definitive_GuideBonusTitle,
+		{
+			{ Lang::English, "Bonus" },
+		}
+	},
+	{
+		Msg::Definitive_GuideSkulduggeryBonus,
+		{
+			{ Lang::English, "When a ball drains, the bonus counts 10,000 for each drop target hit with it, 200,000 for each mode played in this game, 250,000 for each map piece found and 100,000 for each special treasure, and adds the Ship's Hold. In Mutiny the ship sink lights the Ship's Hold light between the flippers, which keeps this ball's bonus to be paid again with the next. A ball that drains within about 15 seconds of leaving the launch lane is served again." },
+		}
+	},
+	{
+		Msg::Definitive_GuideAttackShip,
+		{
+			{ Lang::English, "Starts from the spelled word or the skill shot, for 200,000. Knock down all five ship targets, or put the ball in the ship sink, to sink the ship for the jackpot; each ship target scores 10,000, and the full bank 25,000 more. The ship wire ramp captures the ship: all six fathom lights, for a 7x multiplier." },
+		}
+	},
+	{
+		Msg::Definitive_GuideBermudaTriangle,
+		{
+			{ Lang::English, "Starts from the spelled word or the skill shot, for 200,000. One wind flashes at a time, in turn the two orbits, the two ramps and the four wind lanes: the shot of the flashing wind follows it and scores 125,000, then 250,000, 500,000 and 1,000,000, and the fifth the jackpot, after which the count starts over. Any other wind's shot scores 50,000. The kickout in the triangle scores One Million, and a ball in a hideaway lights the Shipwreck Mystery." },
+		}
+	},
+	{
+		Msg::Definitive_GuideStorm,
+		{
+			{ Lang::English, "Starts from the spelled word or the skill shot, for 300,000. The wind lights lit as it starts set its strength: up to 5 a Squall, 10,000 a target and the jackpot every eighth; up to 10 a Tropical Storm, 25,000 and every seventh; up to 15 a Monsoon, 50,000 and every sixth; more a Hurricane, 100,000 and every fifth. Every drop target bails a bucket. The west wind lane lights the ball save for 10 seconds, and the kickout the storm opens scores One Million. A ball in a hideaway shipwrecks you: the mode ends and the Shipwreck Mystery lights." },
+		}
+	},
+	{
+		Msg::Definitive_GuideTavern,
+		{
+			{ Lang::English, "Starts from the spelled word or the skill shot, for 200,000. The three tavern window lights flash one at a time, briefly and at random: the ball in a tavern window sink while its light flashes gives a map piece with One Million, the next special treasure, coins or an extra ball. Each tavern target switches a magnet on under a keg light for 25,000, and a ball crossing a magnet that is on switches it off for 100,000. All three tavern targets give the jackpot and 50,000." },
+		}
+	},
+	{
+		Msg::Definitive_GuideTreasureHunt,
+		{
+			{ Lang::English, "Starts from the spelled word or the skill shot, for 300,000. An X flashes by one sink at a time, in a fixed order of five: the ball in that sink finds the next special treasure, 100,000 to 1,500,000, and at the fifth the jackpot; then the next X flashes. A sink without the X is a Secret Hideaway. The two east wind lanes bury coins, two special treasures, the bonus, the jackpot and an extra ball, one at a time, for the Shipwreck Mystery to dig up." },
+		}
+	},
+	{
+		Msg::Definitive_GuideMutiny,
+		{
+			{ Lang::English, "Starts only from the spelled word, for 100,000. Each bumper hit scores 25,000 and every tenth the jackpot. The ship sink lights the Ship's Hold. Out of the mode, every twelfth bumper hit adds a crew, up to six, and each crew raises the bumpers' score, from 1,500 up to 10,500." },
+		}
+	},
+	{
+		Msg::Definitive_GuideSwordFight,
+		{
+			{ Lang::English, "Starts only from the spelled word, for 250,000. Each of the four volcano targets and the three parrot targets scores 30,000. All four volcano targets, or all three parrot targets, give the next award: a special treasure, then coins, then a map piece with One Million, then extra balls." },
+		}
+	},
+	{
+		Msg::Definitive_GuidePegLegsLoot,
+		{
+			{ Lang::English, "The final mode, picked once all six map pieces are found; the spelled word starts it, for 1,000,000. Put the ball in the ship sink, whose X flashes, for the loot: the fathom lights' 7x multiplier, the bumpers' most crew and the jackpot, then 500,000 for each coin and special treasure lit and One Million for each map piece and mode played, at that multiplier. Then the mode ends and Lava-Ball starts. The other five sinks with an X find the next special treasure, and each light rollover adds 50,000 to the jackpot. As it ends, the map pieces go out, and so do the mode lights but Sword Fight's and its own." },
+		}
+	},
+	{
+		Msg::Definitive_GuideLavaBall,
+		{
+			{ Lang::English, "In play, hitting all four volcano targets starts it: the brig's balls are kicked out and more are served to make three. Spelling SKULDUGGERY during it finds a map piece instead of starting a mode. Peg Leg's Loot starts it too as it ends. It ends when one ball is left." },
+		}
+	},
+	{
+		Msg::Definitive_GuideJailbreak,
+		{
+			{ Lang::English, "The brig target's third hit in play, or a third ball in the brig, starts it: the brig's balls are kicked back into play for 100,000. With the brig empty, the brig target's third hit only flashes the crew lights out. It ends when one ball is left." },
+		}
+	},
+	{
+		Msg::Definitive_GuideBrigText,
+		{
+			{ Lang::English, "A ball that drops into the brig's hole shows In The Brig and leaves play, and a new ball is served. The brig keeps up to two balls; the third starts Jailbreak. The brig's balls come back into play in Jailbreak, in Lava-Ball and on the game's last ball." },
+		}
+	},
+	{
+		Msg::Definitive_StatModes,
+		{
+			{ Lang::English, "Modes done" },
+		}
+	},
+	{
+		Msg::Definitive_StatLoots,
+		{
+			{ Lang::English, "Peg Leg's Loot found" },
+		}
+	},
+	{
+		Msg::Definitive_StatEachMode,
+		{
+			{ Lang::English, "Modes done, one by one" },
+		}
+	},
+	{
+		Msg::Definitive_AchFirstMode,
+		{
+			{ Lang::English, "Anchors aweigh" },
+		}
+	},
+	{
+		Msg::Definitive_AchFirstModeText,
+		{
+			{ Lang::English, "Complete a mode" },
+		}
+	},
+	{
+		Msg::Definitive_AchSevenModes,
+		{
+			{ Lang::English, "Scourge of the seas" },
+		}
+	},
+	{
+		Msg::Definitive_AchSevenModesText,
+		{
+			{ Lang::English, "Complete all seven modes before Peg Leg's Loot in one game" },
+		}
+	},
+	{
+		Msg::Definitive_AchEveryMode,
+		{
+			{ Lang::English, "Old salt" },
+		}
+	},
+	{
+		Msg::Definitive_AchEveryModeText,
+		{
+			{ Lang::English, "Complete each of the seven modes before Peg Leg's Loot at least once" },
+		}
+	},
+	{
+		Msg::Definitive_AchPegLegsLoot,
+		{
+			{ Lang::English, "Peg Leg's heir" },
+		}
+	},
+	{
+		Msg::Definitive_AchPegLegsLootText,
+		{
+			{ Lang::English, "Find Peg Leg's Loot" },
+		}
+	},
+	{
+		Msg::FullTilt_Caption,
+		{
+			{ Lang::English, "Full Tilt! - Space Cadet" },
+		}
+	},
+	{
+		Msg::FullTilt_About,
+		{
+			{ Lang::English, "About Full Tilt!" },
+		}
+	},
+	{
+		Msg::FullTilt_GameOver,
+		{
+			{ Lang::English, "Full Tilt!\nSpace Cadet Demo" },
+		}
+	},
+	{
+		Msg::Dragon_Caption,
+		{
+			{ Lang::English, "Full Tilt! - Dragon's Keep" },
+		}
+	},
+	{
+		Msg::Dragon_HitFireLizards,
+		{
+			{ Lang::English, "Hit Fire Lizards To Begin Quest" },
+		}
+	},
+	{
+		Msg::Dragon_TargetBonus,
+		{
+			{ Lang::English, "Target Bonus\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_QuestBonus,
+		{
+			{ Lang::English, "Quest Bonus\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_ArmorBonus,
+		{
+			{ Lang::English, "Armor Bonus\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_SpellBonus,
+		{
+			{ Lang::English, "Spell Bonus\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_BonusHold,
+		{
+			{ Lang::English, "Bonus Hold\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_TotalBonus,
+		{
+			{ Lang::English, "Total Bonus\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_HighScore,
+		{
+			{ Lang::English, "HIGH SCORE" },
+		}
+	},
+	{
+		Msg::Dragon_LaunchBall,
+		{
+			{ Lang::English, "Launch Ball" },
+		}
+	},
+	{
+		Msg::Dragon_DragonEggBonus,
+		{
+			{ Lang::English, "Dragon Egg Bonus\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_WeaponBonus,
+		{
+			{ Lang::English, "Weapon Bonus\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_RestartQuest,
+		{
+			{ Lang::English, "Restart Quest\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_FireLizards,
+		{
+			{ Lang::English, "Fire Lizards\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_PutBallInFireLizardSinks,
+		{
+			{ Lang::English, "Put ball in Fire Lizard Sinks" },
+		}
+	},
+	{
+		Msg::Dragon_FireLizardSlain,
+		{
+			{ Lang::English, "Fire Lizard Slain\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_ExtraBall,
+		{
+			{ Lang::English, "Extra Ball" },
+		}
+	},
+	{
+		Msg::Dragon_WizardsFury,
+		{
+			{ Lang::English, "Wizard's Fury\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_PutBallInWell,
+		{
+			{ Lang::English, "Put ball in Well and hit Spell Targets" },
+		}
+	},
+	{
+		Msg::Dragon_MysteryExtraBall,
+		{
+			{ Lang::English, "Mystery Bonus set to:\nExtra Ball" },
+		}
+	},
+	{
+		Msg::Dragon_MysteryMaxWeapons,
+		{
+			{ Lang::English, "Mystery Bonus set to:\nMax Weapons" },
+		}
+	},
+	{
+		Msg::Dragon_MysteryMaxArmor,
+		{
+			{ Lang::English, "Mystery Bonus set to:\nMax Armor" },
+		}
+	},
+	{
+		Msg::Dragon_MysteryJackpot,
+		{
+			{ Lang::English, "Mystery Bonus set to:\nJackpot" },
+		}
+	},
+	{
+		Msg::Dragon_MysteryOneMillion,
+		{
+			{ Lang::English, "Mystery Bonus set to:\nOne Million" },
+		}
+	},
+	{
+		Msg::Dragon_MaxArmor,
+		{
+			{ Lang::English, "Max Armor" },
+		}
+	},
+	{
+		Msg::Dragon_MaxWeapons,
+		{
+			{ Lang::English, "Max Weapons" },
+		}
+	},
+	{
+		Msg::Dragon_OneMillion,
+		{
+			{ Lang::English, "One Million" },
+		}
+	},
+	{
+		Msg::Dragon_DragonPass,
+		{
+			{ Lang::English, "Dragon Pass\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_PutBallInKickouts,
+		{
+			{ Lang::English, "Put ball in Armor and Gargoyle Kickouts" },
+		}
+	},
+	{
+		Msg::Dragon_PassClear,
+		{
+			{ Lang::English, "Pass Clear" },
+		}
+	},
+	{
+		Msg::Dragon_RescueMaiden,
+		{
+			{ Lang::English, "Rescue Maiden\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_PutBallInPrisonTower,
+		{
+			{ Lang::English, "Put ball in Prison Tower" },
+		}
+	},
+	{
+		Msg::Dragon_MaidenRescued,
+		{
+			{ Lang::English, "Maiden Rescued\nExtra Ball Available" },
+		}
+	},
+	{
+		Msg::Dragon_Score,
+		{
+			{ Lang::English, "%ld" },
+		}
+	},
+	{
+		Msg::Dragon_DragonHoard,
+		{
+			{ Lang::English, "Dragon Hoard\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_StealGems,
+		{
+			{ Lang::English, "Steal Gems From Dragon" },
+		}
+	},
+	{
+		Msg::Dragon_Gold,
+		{
+			{ Lang::English, "Gold\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_Diamond,
+		{
+			{ Lang::English, "Diamond\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_Pearl,
+		{
+			{ Lang::English, "Pearl\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_Ruby,
+		{
+			{ Lang::English, "Ruby\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_Emerald,
+		{
+			{ Lang::English, "Emerald\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_Sapphire,
+		{
+			{ Lang::English, "Sapphire\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_Amethyst,
+		{
+			{ Lang::English, "Amethyst\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_Opal,
+		{
+			{ Lang::English, "Opal\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_TowerLockEnabled,
+		{
+			{ Lang::English, "Tower Lock Enabled" },
+		}
+	},
+	{
+		Msg::Dragon_BallSaved,
+		{
+			{ Lang::English, "Ball Saved" },
+		}
+	},
+	{
+		Msg::Dragon_DragonHoardSelected,
+		{
+			{ Lang::English, "Dragon Hoard\nQuest Selected" },
+		}
+	},
+	{
+		Msg::Dragon_FireLizardsSelected,
+		{
+			{ Lang::English, "Fire Lizards\nQuest Selected" },
+		}
+	},
+	{
+		Msg::Dragon_RescueMaidenSelected,
+		{
+			{ Lang::English, "Rescue Maiden\nQuest Selected" },
+		}
+	},
+	{
+		Msg::Dragon_DragonPassSelected,
+		{
+			{ Lang::English, "Dragon Pass\nQuest Selected" },
+		}
+	},
+	{
+		Msg::Dragon_WizardsFurySelected,
+		{
+			{ Lang::English, "Wizard's Fury\nQuest Selected" },
+		}
+	},
+	{
+		Msg::Dragon_JackpotGrows,
+		{
+			{ Lang::English, "Jackpot Grows" },
+		}
+	},
+	{
+		Msg::Dragon_FireRidge,
+		{
+			{ Lang::English, "Fire Ridge\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_SuperJackpotIncreased,
+		{
+			{ Lang::English, "Super Jackpot Increased\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_BallTrapped,
+		{
+			{ Lang::English, "Ball Trapped\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_PurchaseExtraBall,
+		{
+			{ Lang::English, "Purchase Extra Ball?\nYes [Left]\nNo [Right]" },
+		}
+	},
+	{
+		Msg::Dragon_PurchaseExtraBallLight,
+		{
+			{ Lang::English, "Purchase Extra Ball Light?\nYes [Left]\nNo [Right]" },
+		}
+	},
+	{
+		Msg::Dragon_PurchaseArmor,
+		{
+			{ Lang::English, "Purchase Armor?\nYes [Left]\nNo [Right]" },
+		}
+	},
+	{
+		Msg::Dragon_PurchaseWeapon,
+		{
+			{ Lang::English, "Purchase Weapon?\nYes [Left]\nNo [Right]" },
+		}
+	},
+	{
+		Msg::Dragon_PurchaseSpell,
+		{
+			{ Lang::English, "Purchase Spell?\nYes [Left]\nNo [Right]" },
+		}
+	},
+	{
+		Msg::Dragon_BuyDragonHoard,
+		{
+			{ Lang::English, "Dragon Hoard?\nYes [Left]\nNo [Right]" },
+		}
+	},
+	{
+		Msg::Dragon_BuyFireLizards,
+		{
+			{ Lang::English, "Fire Lizards?\nYes [Left]\nNo [Right]" },
+		}
+	},
+	{
+		Msg::Dragon_BuyRescueMaiden,
+		{
+			{ Lang::English, "Rescue Maiden?\nYes [Left]\nNo [Right]" },
+		}
+	},
+	{
+		Msg::Dragon_BuyDragonPass,
+		{
+			{ Lang::English, "Dragon Pass?\nYes [Left]\nNo [Right]" },
+		}
+	},
+	{
+		Msg::Dragon_BuyWizardsFury,
+		{
+			{ Lang::English, "Wizard's Fury?\nYes [Left]\nNo [Right]" },
+		}
+	},
+	{
+		Msg::Dragon_NoDragonEggs,
+		{
+			{ Lang::English, "No Dragon Eggs" },
+		}
+	},
+	{
+		Msg::Dragon_TowerBarrage,
+		{
+			{ Lang::English, "Tower Barrage" },
+		}
+	},
+	{
+		Msg::Dragon_GargoyleGaggleBall,
+		{
+			{ Lang::English, "Gargoyle Gaggle-Ball" },
+		}
+	},
+	{
+		Msg::Dragon_DragonFlurry,
+		{
+			{ Lang::English, "Dragon Flurry" },
+		}
+	},
+	{
+		Msg::Dragon_SlayDragon,
+		{
+			{ Lang::English, "Slay Dragon\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_PutBallInDragonsMouth,
+		{
+			{ Lang::English, "Put ball in Dragon's Mouth" },
+		}
+	},
+	{
+		Msg::Dragon_SlayDragonHitsLeft,
+		{
+			{ Lang::English, "Slay Dragon\nHits Left: %ld" },
+		}
+	},
+	{
+		Msg::Dragon_SuperJackpot,
+		{
+			{ Lang::English, "Super Jackpot\n%ld" },
+		}
+	},
+	{
+		Msg::Dragon_ExtraBallLight,
+		{
+			{ Lang::English, "Extra Ball Light" },
+		}
+	},
+	{
+		Msg::Skulduggery_Caption,
+		{
+			{ Lang::English, "Full Tilt! - Skulduggery" },
+		}
+	},
+	{
+		Msg::Skulduggery_ShootAgain,
+		{
+			{ Lang::English, "Shoot Again" },
+		}
+	},
+	{
+		Msg::Skulduggery_HighScore,
+		{
+			{ Lang::English, "HIGH SCORE" },
+		}
+	},
+	{
+		Msg::Skulduggery_TargetBonus,
+		{
+			{ Lang::English, "Target Bonus\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_ModeBonus,
+		{
+			{ Lang::English, "Mode Bonus\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_MapPieceBonus,
+		{
+			{ Lang::English, "Map Piece Bonus\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_SpecialTreasures,
+		{
+			{ Lang::English, "Special Treasures\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_ShipsHold,
+		{
+			{ Lang::English, "Ship's Hold\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_TotalBonus,
+		{
+			{ Lang::English, "Total Bonus\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_SpellSkulduggery,
+		{
+			{ Lang::English, "Spell Skulduggery to Start Mode" },
+		}
+	},
+	{
+		Msg::Skulduggery_AttackModeSelected,
+		{
+			{ Lang::English, "Attack Mode Selected" },
+		}
+	},
+	{
+		Msg::Skulduggery_TreasureHuntModeSelected,
+		{
+			{ Lang::English, "Treasure Hunt Mode Selected" },
+		}
+	},
+	{
+		Msg::Skulduggery_TavernModeSelected,
+		{
+			{ Lang::English, "Tavern Mode Selected" },
+		}
+	},
+	{
+		Msg::Skulduggery_BermudaModeSelected,
+		{
+			{ Lang::English, "Bermuda Mode Selected" },
+		}
+	},
+	{
+		Msg::Skulduggery_StormModeSelected,
+		{
+			{ Lang::English, "Storm Mode Selected" },
+		}
+	},
+	{
+		Msg::Skulduggery_MutinyModeSelected,
+		{
+			{ Lang::English, "Mutiny Mode Selected" },
+		}
+	},
+	{
+		Msg::Skulduggery_SwordfightModeSelected,
+		{
+			{ Lang::English, "Swordfight Mode Selected" },
+		}
+	},
+	{
+		Msg::Skulduggery_PeglegsLootModeSelected,
+		{
+			{ Lang::English, "Pegleg's Loot Mode Selected" },
+		}
+	},
+	{
+		Msg::Skulduggery_Score,
+		{
+			{ Lang::English, "%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_AttackShip,
+		{
+			{ Lang::English, "Attack Ship\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_ShipSunk,
+		{
+			{ Lang::English, "Ship Sunk" },
+		}
+	},
+	{
+		Msg::Skulduggery_ShipCaptured,
+		{
+			{ Lang::English, "Ship Captured" },
+		}
+	},
+	{
+		Msg::Skulduggery_AttackShipHelp,
+		{
+			{ Lang::English, "Hit ship to sink.\nWire ramp to capture." },
+		}
+	},
+	{
+		Msg::Skulduggery_TreasureHunt,
+		{
+			{ Lang::English, "Treasure Hunt\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_TreasureHuntHelp,
+		{
+			{ Lang::English, "Hit the X to find treasure" },
+		}
+	},
+	{
+		Msg::Skulduggery_SecretHideaway,
+		{
+			{ Lang::English, "Secret Hideaway\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_GoldIngots,
+		{
+			{ Lang::English, "Gold Ingots" },
+		}
+	},
+	{
+		Msg::Skulduggery_SilverChalice,
+		{
+			{ Lang::English, "Silver Chalice" },
+		}
+	},
+	{
+		Msg::Skulduggery_SignetRing,
+		{
+			{ Lang::English, "Signet Ring" },
+		}
+	},
+	{
+		Msg::Skulduggery_FrantzRuby,
+		{
+			{ Lang::English, "The Frantz Ruby" },
+		}
+	},
+	{
+		Msg::Skulduggery_ShapirosSceptre,
+		{
+			{ Lang::English, "Shapiro's Sceptre" },
+		}
+	},
+	{
+		Msg::Skulduggery_CrownOfSandige,
+		{
+			{ Lang::English, "Crown of Sandige" },
+		}
+	},
+	{
+		Msg::Skulduggery_GoldIngotsBuried,
+		{
+			{ Lang::English, "Gold Ingots\nBuried" },
+		}
+	},
+	{
+		Msg::Skulduggery_SilverChaliceBuried,
+		{
+			{ Lang::English, "Silver Chalice\nBuried" },
+		}
+	},
+	{
+		Msg::Skulduggery_SignetRingBuried,
+		{
+			{ Lang::English, "Signet Ring\nBuried" },
+		}
+	},
+	{
+		Msg::Skulduggery_FrantzRubyBuried,
+		{
+			{ Lang::English, "The Frantz Ruby\nBuried" },
+		}
+	},
+	{
+		Msg::Skulduggery_ShapirosSceptreBuried,
+		{
+			{ Lang::English, "Shapiro's Sceptre\nBuried" },
+		}
+	},
+	{
+		Msg::Skulduggery_CrownOfSandigeBuried,
+		{
+			{ Lang::English, "Crown of Sandige\nBuried" },
+		}
+	},
+	{
+		Msg::Skulduggery_CoinsBuried,
+		{
+			{ Lang::English, "Coins\nBuried" },
+		}
+	},
+	{
+		Msg::Skulduggery_BonusBuried,
+		{
+			{ Lang::English, "Bonus\nBuried" },
+		}
+	},
+	{
+		Msg::Skulduggery_JackpotBuried,
+		{
+			{ Lang::English, "Jackpot\nBuried" },
+		}
+	},
+	{
+		Msg::Skulduggery_ExtraBallBuried,
+		{
+			{ Lang::English, "Extra Ball\nBuried" },
+		}
+	},
+	{
+		Msg::Skulduggery_Tavern,
+		{
+			{ Lang::English, "Tavern\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_TavernHelp,
+		{
+			{ Lang::English, "Hit the Tavern" },
+		}
+	},
+	{
+		Msg::Skulduggery_OneMillion,
+		{
+			{ Lang::English, "One Million" },
+		}
+	},
+	{
+		Msg::Skulduggery_ExtraBall,
+		{
+			{ Lang::English, "Extra Ball" },
+		}
+	},
+	{
+		Msg::Skulduggery_Bermuda,
+		{
+			{ Lang::English, "Bermuda Triangle\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_BermudaHelp,
+		{
+			{ Lang::English, "Follow the Winds" },
+		}
+	},
+	{
+		Msg::Skulduggery_Squall,
+		{
+			{ Lang::English, "Squall!\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_TropicalStorm,
+		{
+			{ Lang::English, "Tropical Storm!\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_Monsoon,
+		{
+			{ Lang::English, "Monsoon!\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_Hurricane,
+		{
+			{ Lang::English, "Hurricane!\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_StormHelp,
+		{
+			{ Lang::English, "Hit targets to bail water" },
+		}
+	},
+	{
+		Msg::Skulduggery_Shipwrecked,
+		{
+			{ Lang::English, "Shipwrecked" },
+		}
+	},
+	{
+		Msg::Skulduggery_ShipwreckMysteryAvailable,
+		{
+			{ Lang::English, "Shipwreck Mystery\nAvailable" },
+		}
+	},
+	{
+		Msg::Skulduggery_Mutiny,
+		{
+			{ Lang::English, "Mutiny!\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_MutinyHelp,
+		{
+			{ Lang::English, "Hit Bumpers to supress rebellion" },
+		}
+	},
+	{
+		Msg::Skulduggery_CrewAdded,
+		{
+			{ Lang::English, "Crew Added\nBumpers Now\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_MaxCrew,
+		{
+			{ Lang::English, "Max Crew\nBumpers Now\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_SwordFight,
+		{
+			{ Lang::English, "Sword Fight\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_SwordFightHelp,
+		{
+			{ Lang::English, "Hit Parrot and Volcano targets" },
+		}
+	},
+	{
+		Msg::Skulduggery_TradewindLoop,
+		{
+			{ Lang::English, "Tradewind Loop\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_IslandBreeze,
+		{
+			{ Lang::English, "Island Breeze\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_NorEaster,
+		{
+			{ Lang::English, "Nor'Easter\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_PortOCall,
+		{
+			{ Lang::English, "Port O' Call\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_SouEastern,
+		{
+			{ Lang::English, "Sou'Eastern\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_Westerly,
+		{
+			{ Lang::English, "Westerly\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_Easterly,
+		{
+			{ Lang::English, "Easterly\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_BonusScore,
+		{
+			{ Lang::English, "Bonus\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_JackpotScore,
+		{
+			{ Lang::English, "Jackpot\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_InTheBrig,
+		{
+			{ Lang::English, "In The Brig" },
+		}
+	},
+	{
+		Msg::Skulduggery_LavaBall,
+		{
+			{ Lang::English, "Lava-Ball" },
+		}
+	},
+	{
+		Msg::Skulduggery_JailBreak,
+		{
+			{ Lang::English, "Jail Break!" },
+		}
+	},
+	{
+		Msg::Skulduggery_PegLegsLoot,
+		{
+			{ Lang::English, "Pegleg's Loot\n%ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_PegLegsLootHelp,
+		{
+			{ Lang::English, "Hit X to find Peg Leg's Loot" },
+		}
+	},
+	{
+		Msg::Skulduggery_PictureSkillShot,
+		{
+			{ Lang::English, "Skill Shot" },
+		}
+	},
+	{
+		Msg::Skulduggery_PictureAttackShip,
+		{
+			{ Lang::English, "Attack Ship" },
+		}
+	},
+	{
+		Msg::Skulduggery_PictureTreasureHunt,
+		{
+			{ Lang::English, "Treasure Hunt" },
+		}
+	},
+	{
+		Msg::Skulduggery_PictureTavern,
+		{
+			{ Lang::English, "Tavern" },
+		}
+	},
+	{
+		Msg::Skulduggery_PictureKeg,
+		{
+			{ Lang::English, "Keg" },
+		}
+	},
+	{
+		Msg::Skulduggery_PictureMapPiece,
+		{
+			{ Lang::English, "Map Piece" },
+		}
+	},
+	{
+		Msg::Skulduggery_PictureCoins,
+		{
+			{ Lang::English, "Coins" },
+		}
+	},
+	{
+		Msg::Skulduggery_PictureMultiplier,
+		{
+			{ Lang::English, "%ldx Multiplier" },
+		}
+	},
+	{
+		Msg::Skulduggery_PictureBermuda,
+		{
+			{ Lang::English, "Bermuda Triangle" },
+		}
+	},
+	{
+		Msg::Skulduggery_PictureBuckets,
+		{
+			{ Lang::English, "Buckets Bailed: %ld" },
+		}
+	},
+	{
+		Msg::Skulduggery_PictureLetterW,
+		{
+			{ Lang::English, "W" },
+		}
+	},
+	{
+		Msg::Skulduggery_PictureLetterI,
+		{
+			{ Lang::English, "I" },
+		}
+	},
+	{
+		Msg::Skulduggery_PictureLetterN,
+		{
+			{ Lang::English, "N" },
+		}
+	},
+	{
+		Msg::Skulduggery_PictureLetterD,
+		{
+			{ Lang::English, "D" },
+		}
+	},
+	{
+		Msg::Skulduggery_PictureLetterS,
+		{
+			{ Lang::English, "S" },
+		}
+	},
+	{
+		Msg::Skulduggery_PicturePegLegsLoot,
+		{
+			{ Lang::English, "Peg Leg's Loot" },
 		}
 	}
 };

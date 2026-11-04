@@ -83,10 +83,35 @@ enum class MessageCode
 	TBlockerEnable = 52,
 	TBlockerRestartTimeout = 59,
 
+	// TAnimatedBlocker, Full Tilt's bonus tables: CADET.EXE's numbers, so their rules can send them as they are
+	TAnimatedBlockerAnimateOff = 55,
+	TAnimatedBlockerAnimateOn = 56,
+	TAnimatedBlockerSetState = 57,
+	TAnimatedBlockerAnimateTo = 58,
+	TAnimatedBlockerSetOn = 59,
+	TAnimatedBlockerSetOff = 60,
+	TAnimatedBlockerRestartTimeout = 69,
+
+	// TDiverter, CADET.EXE's numbers; CADET.EXE also takes 63 and 75 as Enable and 62 and 76 as Disable
+	TDiverterDisable = 55,
+	TDiverterEnable = 56,
+
+	// TLightSweeps, CADET.EXE's number: start the sweep whose attributes are in state <value> of light_sweeps
+	TLightSweepsStart = 27,
+
 	TGateDisable = 53,
 	TGateEnable = 54,
 
 	TKickoutRestartTimer = 55,
+
+	// CADET.EXE's numbers, the bonus tables only: TKickout, TKickback and TMagnet switched on and off. TKickout lets
+	// go of a ball it holds as it goes off; a TKickback that is off doesn't kick
+	TKickoutEnable = 75,
+	TKickoutDisable = 76,
+	TKickbackEnable = 75,
+	TKickbackDisable = 76,
+	TMagnetEnable = 75,
+	TMagnetDisable = 76,
 
 	TSinkUnknown7 = 7,
 	TSinkResetTimer = 56,
@@ -95,6 +120,12 @@ enum class MessageCode
 	TSoloTargetEnable = 50,
 
 	TTimerResetTimer = 59,
+	// CADET.EXE's number, the bonus tables only: the time left in milliseconds, 0 when the timer isn't running
+	TTimerGetTimeLeft = 72,
+
+	// THole, CADET.EXE's number, the bonus tables only: let the ball go after <value> seconds, at once if it is 0 or
+	// less
+	THoleRelease = 67,
 
 	ControlBallCaptured = 57,
 	ControlBallReleased = 58,
@@ -106,6 +137,26 @@ enum class MessageCode
 	ControlDisableMultiplier = 65,
 	ControlMissionComplete = 66,
 	ControlMissionStarted = 67,
+	// Full Tilt only (Phase F): the ball crossed a ramp exit (TRampExit) into its second or its first layer.
+	// CADET.EXE numbers them 0x56 and 0x55 and its TRamp sends them too, for walls 1302 and 1301; this TRamp does
+	// on the bonus tables only, as Pinball.exe's doesn't.
+	ControlRampExitToLayer2 = 68,
+	ControlRampExitToLayer1 = 69,
+	// Full Tilt only: a TAnimatedBlocker reached the state it was animating to (CADET.EXE's 0x3d)
+	ControlAnimationDone = 70,
+	// The bonus tables only: a TRamp's plane moved the ball to another layer (CADET.EXE's 0x54)
+	ControlRampLayerChanged = 71,
+
+	// Dragon's Keep's rules only, DRAGON.EXE's numbers, which its rules send only among themselves
+	DragonSkipBonusText = 1,
+	// The component that scored last no longer is, as another one scores (0x4d); Skulduggery's ramps and orbits end
+	// their combos on it
+	DragonScorerReplaced = 77,
+	DragonEnterState = 79,
+	DragonShowStateText = 80,
+	DragonQuestResume = 81,
+	DragonQuestEnd = 82,
+	DragonBallDrained = 83,
 
 	// Public codes 1000+, apply to all components
 	LeftFlipperInputPressed = 1000,
@@ -142,10 +193,15 @@ public:
 	virtual vector2 get_coordinates();
 	void SpriteSet(int index) const;
 	void SpriteSetBall(int index, vector2i pos, float depth) const;
+	// CADET.EXE, the bonus tables' engine, keeps every component's message field per player: a player change swaps it
+	// (0x413570) and Reset clears it for all players (0x413550). Its components but the flippers do this in Message;
+	// TLight, TLightGroup, TBumper, TPopupTarget and TSink already keep theirs per player, as 3D Pinball's do.
+	void KeepMessageFieldPerPlayer(MessageCode code, float value);
 
 	char UnusedBaseFlag;
 	char ActiveFlag;
 	int MessageField;
+	std::array<int, 4> PlayerMessageFields{};
 	char* GroupName;
 	component_control* Control;
 	int GroupIndex;

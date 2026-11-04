@@ -1,7 +1,11 @@
 #pragma once
 #include "gdrv.h"
 
+#include <set>
+
 enum class GameBindings;
+enum class PostEffects : int;
+enum class Editions : int;
 
 struct SdlTickClock
 {
@@ -66,7 +70,12 @@ class winmain
 	using TimePoint = std::chrono::time_point<Clock>;
 
 public:
+#ifdef SCP_BUILD_COMMIT
+	// A test build names the commit it was made from (tools/make-test-build.sh)
+	static constexpr const char* Version = "2.1.1 DEV, test build " SCP_BUILD_COMMIT;
+#else
 	static constexpr const char* Version = "2.1.1 DEV";
+#endif
 	static bool single_step;
 	static SDL_Window* MainWindow;
 	static SDL_Renderer* Renderer;
@@ -81,12 +90,36 @@ public:
 	[[ noreturn ]] static void memalloc_failure();
 	static int ProcessWindowMessages();
 	static void a_dialog();
+	// Classic's Select Table
+	static void RenderTableDialog();
 	static void end_pause();
 	static void new_game();
 	static void pause(bool toggle = true);
 	static void Restart();
 	static void UpdateFrameRate();
 	static void HandleGameBinding(GameBindings binding, bool shortcut);
+	static void ApplyDisplayScale();
+	static bool CreateRenderer(bool gpu);
+	static void SetPostProcessing(PostEffects effect);
+	static void GamepadTrigger(const SDL_GamepadAxisEvent& event);
+	static void GamepadInput(SDL_JoystickID gamepad, int value, bool down);
+	static void TouchInput(const SDL_TouchFingerEvent& event);
+	static float ExpectedMenuHeight();
+	// Whether the menu bar is up: Classic's, when the Show Menu option is on; Space Cadet 2026 has none
+	static bool MenuBarShown();
+	// Why post-processing can't show, or null when it can
+	static const char* PostProcessingUnavailable();
+	// Why the compositor's effects can't show, or null when they can
+	static const char* EffectsUnavailable();
+	// Starts measuring sleep again, after Precise Sleep is switched
+	static void ResetPreciseSleep();
+	// Opens or closes Space Cadet 2026's pause screen for the game in play, or ignores the key while a game ends; false
+	// when Classic's pause should handle it
+	static bool DefinitivePause();
+	// Space Cadet 2026's screen for missing game data, in place of the table; true once the player has chosen a
+	// folder to load from, false when they quit
+	static bool FindGameData(const std::vector<const char*>& searchPaths);
+
 private:
 	static int return_value;
 	static int mouse_down, last_mouse_x, last_mouse_y;
@@ -107,10 +140,32 @@ private:
 	static unsigned gfrOffset;
 	static float gfrWindow;
 	static int CursorIdleCounter;
+	static std::unique_ptr<ImGuiStyle> BaseStyle;
+	// Space Cadet 2026's style, before scaling like BaseStyle; it takes Classic's place while that edition is on
+	static std::unique_ptr<ImGuiStyle> DefinitiveStyle;
+	// The edition whose style and font the UI has, and whether this ImGui context has Space Cadet 2026's fonts yet
+	static Editions StyledEdition;
+	static bool DefinitiveFontsAdded;
+	static bool SoftwareRenderer;
+	static bool HighRefresh;
+	static DurationMs UpdateTime, UpdateTimeAccumulator;
+	static int CurrentFps;
+	static bool RefreshRateUnknown;
+	// Buttons and triggers held on each gamepad, released when it is unplugged
+	static std::map<SDL_JoystickID, std::set<int>> GamepadHeld;
+	static std::map<std::pair<SDL_TouchID, SDL_FingerID>, GameBindings> TouchBindings;
+	// When the edition hint goes away, in SDL ticks; 0 while it isn't shown
+	static Uint64 EditionHintEnd;
 
 	static void RenderUi();
 	static void RenderFrameTimeDialog();
+	// The one-time hint that names the key for switching editions
+	static void RenderEditionHint();
 	static void HybridSleep(DurationMs seconds);
 	static void MainLoop();
+	// Gives the UI the style and font of the edition that is on, between ImGui's backend and core NewFrame
+	static void ApplyEditionLook();
+	// One table update, then Space Cadet 2026's, while it is on
+	static void TableFrame(float dtMilliSec);
 	static void ImGuiMenuItemWShortcut(GameBindings binding, bool selected = false);
 };

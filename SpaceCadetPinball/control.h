@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 class TCollisionComponent;
 class TBall;
 enum class MessageCode;
@@ -8,6 +10,7 @@ class TLight;
 class TSound;
 class TPinballTable;
 class TPinballComponent;
+class TTextBox;
 enum class Msg : int;
 
 struct component_tag_base
@@ -95,6 +98,7 @@ public:
 	static int SpecialAddScore(int score, bool mission = false);
 	static int AddRankProgress(int rank);
 	static void AdvanceWormHoleDestination(int flag);
+	static void CompleteMission(TTextBox* doneBox, Msg doneText, int score, int rank, LPCSTR soundSource);
 
 	static void FlipperRebounderControl1(MessageCode code, TPinballComponent* caller);
 	static void FlipperRebounderControl2(MessageCode code, TPinballComponent* caller);

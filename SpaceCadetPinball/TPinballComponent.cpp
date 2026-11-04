@@ -3,6 +3,7 @@
 
 #include "control.h"
 #include "loader.h"
+#include "pb.h"
 #include "proj.h"
 #include "render.h"
 #include "TPinballTable.h"
@@ -34,9 +35,9 @@ TPinballComponent::TPinballComponent(TPinballTable* table, int groupIndex, bool 
 		for (int index = 0; index < visualCount; ++index)
 		{
 			loader::query_visual(groupIndex, index, &visual);
+			// A damaged table's bitmap can come without its zMap (GroupData::SetBitmap); SpriteSet hides such a state
 			if (visual.Bitmap.Bmp)
 			{
-				assertm(visual.Bitmap.ZMap, "Bitmap/zMap pairing is mandatory");
 				if (!ListBitmap)
 					ListBitmap = new std::vector<SpriteData>();
 				ListBitmap->push_back(visual.Bitmap);
@@ -64,13 +65,9 @@ TPinballComponent::TPinballComponent(TPinballTable* table, int groupIndex, bool 
 				maths::enclosing_box(bmp1Rect, tmpRect, bmp1Rect);
 			}
 
-			RenderSprite = new render_sprite(
-				VisualTypes::Sprite,
-				rootBmp,
-				rootSprite.ZMap,
-				rootBmp->XPosition - table->XOffset,
-				rootBmp->YPosition - table->YOffset,
-				&bmp1Rect);
+			RenderSprite =
+				new render_sprite(VisualTypes::Sprite, rootSprite.ZMap ? rootBmp : nullptr, rootSprite.ZMap,
+								  rootBmp->XPosition - table->XOffset, rootBmp->YPosition - table->YOffset, &bmp1Rect);
 
 			// Sound position = center of root visual, reverse-projected, normalized.
 			auto& rect = RenderSprite->BmpRect;
@@ -101,10 +98,30 @@ TPinballComponent::~TPinballComponent()
 
 int TPinballComponent::Message(MessageCode code, float value)
 {
+	if (pb::BonusTable())
+	{
+		// CADET.EXE's base keeps the field per player and doesn't store the code
+		KeepMessageFieldPerPlayer(code, value);
+		return 0;
+	}
 	MessageField = static_cast<int>(code);
 	if (code == MessageCode::Reset)
 		MessageField = 0;
 	return 0;
+}
+
+void TPinballComponent::KeepMessageFieldPerPlayer(MessageCode code, float value)
+{
+	if (code == MessageCode::PlayerChanged)
+	{
+		PlayerMessageFields[PinballTable->CurrentPlayer] = MessageField;
+		MessageField = PlayerMessageFields[static_cast<int>(value)];
+	}
+	else if (code == MessageCode::Reset)
+	{
+		MessageField = 0;
+		PlayerMessageFields.fill(0);
+	}
 }
 
 void TPinballComponent::port_draw()
@@ -136,6 +153,10 @@ void TPinballComponent::SpriteSet(int index) const
 		zMap = spriteData.ZMap;
 		xPos = bmp->XPosition - PinballTable->XOffset;
 		yPos = bmp->YPosition - PinballTable->YOffset;
+		// A damaged table's bitmap can lose its zMap (GroupData::SetBitmap), and the frame can't be drawn without
+		// one; the state then shows nothing
+		if (!zMap)
+			bmp = nullptr;
 	}
 	else
 	{
